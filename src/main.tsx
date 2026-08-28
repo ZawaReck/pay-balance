@@ -23,6 +23,18 @@ type AppState = {
   leftOnLeft: boolean;
 };
 
+type CurrentUser = { id: string; displayName: string };
+type PairState = {
+  pair: {
+    id: string;
+    left: CurrentUser;
+    right: CurrentUser;
+  } | null;
+  invitation: { id: string; invitedEmail: string; expiresAt: string } | null;
+};
+
+type InvitationDetails = { inviterName: string; expiresAt: string };
+
 const initialState: AppState = {
   base: { leftNet: 0, lastOddExtra: null },
   names: { left: "はなこ", right: "たろう" },
@@ -60,7 +72,13 @@ function App() {
   const suppressedClickId = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
-  const [authenticatedUser, setAuthenticatedUser] = useState<string | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<CurrentUser | null>(null);
+  const [authLoaded, setAuthLoaded] = useState(false);
+  const [pairState, setPairState] = useState<PairState | null>(null);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
+  const [invitationError, setInvitationError] = useState("");
+  const invitationToken = location.pathname.match(/^\/invitations\/([^/]+)$/)?.[1] ?? null;
 
   const ledger = useMemo(
     () => calculateLedger(appState.expenses, appState.base, appState.leftOnLeft ? "right" : "left"),
@@ -77,10 +95,42 @@ function App() {
 
   useEffect(() => {
     fetch("/api/me")
-      .then((response) => response.ok ? response.json() as Promise<{ user?: { displayName?: string } }> : null)
-      .then((data: { user?: { displayName?: string } } | null) => setAuthenticatedUser(data?.user?.displayName ?? null))
-      .catch(() => setAuthenticatedUser(null));
+      .then((response) => response.ok ? response.json() as Promise<{ user?: CurrentUser }> : null)
+      .then((data: { user?: CurrentUser } | null) => setAuthenticatedUser(data?.user ?? null))
+      .catch(() => setAuthenticatedUser(null))
+      .finally(() => setAuthLoaded(true));
   }, []);
+
+  const loadPairState = () => fetch("/api/pair")
+    .then(async (response) => {
+      if (!response.ok) throw new Error((await response.json<{ error?: string }>()).error ?? "ペア情報を取得できませんでした。");
+      return response.json<PairState>();
+    })
+    .then((state) => {
+      setPairState(state);
+      if (state.pair) {
+        setAppState((current) => ({
+          ...current,
+          names: { left: state.pair!.left.displayName, right: state.pair!.right.displayName },
+        }));
+      }
+    })
+    .catch((error) => setMessage(error instanceof Error ? error.message : "ペア情報を取得できませんでした。"));
+
+  useEffect(() => {
+    if (authenticatedUser) void loadPairState();
+  }, [authenticatedUser]);
+
+  useEffect(() => {
+    if (!invitationToken) return;
+    fetch(`/api/invitations/${encodeURIComponent(invitationToken)}`)
+      .then(async (response) => {
+        const data = await response.json<{ invitation?: InvitationDetails; error?: string }>();
+        if (!response.ok || !data.invitation) throw new Error(data.error ?? "招待を確認できませんでした。");
+        setInvitationDetails(data.invitation);
+      })
+      .catch((error) => setInvitationError(error instanceof Error ? error.message : "招待を確認できませんでした。"));
+  }, [invitationToken]);
 
   useEffect(() => {
     if (!message) return;
@@ -157,6 +207,44 @@ function App() {
     setRevealedExpenseId(null);
   };
 
+  const submitInvitation = async (email: string) => {
+    const response = await fetch("/api/invitations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json<{ error?: string }>();
+    if (!response.ok) {
+      setMessage(data.error ?? "招待メールを送信できませんでした。");
+      return;
+    }
+    setMessage("招待メールを送信しました。");
+    setInviteEmail("");
+    await loadPairState();
+  };
+
+  const removeInvitation = async (invitationId: string) => {
+    const response = await fetch(`/api/invitations/${encodeURIComponent(invitationId)}`, { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json<{ error?: string }>();
+      setMessage(data.error ?? "招待を取り消せませんでした。");
+      return;
+    }
+    setMessage("招待を取り消しました。");
+    await loadPairState();
+  };
+
+  const joinPair = async () => {
+    if (!invitationToken) return;
+    const response = await fetch(`/api/invitations/${encodeURIComponent(invitationToken)}`, { method: "POST" });
+    const data = await response.json<{ pair?: { id: string }; error?: string }>();
+    if (!response.ok) {
+      setInvitationError(data.error ?? "招待を受諾できませんでした。");
+      return;
+    }
+    location.assign("/");
+  };
+
   const displayedParticipants: Participant[] = appState.leftOnLeft ? ["left", "right"] : ["right", "left"];
   const participantNames = appState.names;
   const historyRows = useMemo(() => {
@@ -168,6 +256,34 @@ function App() {
     });
     return rows.reverse();
   }, [appState.base.lastOddExtra, appState.expenses]);
+
+  if (invitationToken) {
+    const returnTo = encodeURIComponent(`/invitations/${invitationToken}`);
+    return (
+      <main className="app-shell invitation-page">
+        <header className="topbar"><a className="brand" href="/">PayBalance</a></header>
+        <section className="invitation-card">
+          <h1>ペアへの招待</h1>
+          {invitationError ? (
+            <p>{invitationError}</p>
+          ) : !invitationDetails ? (
+            <p>招待を確認しています…</p>
+          ) : (
+            <>
+              <p><strong>{invitationDetails.inviterName}</strong> さんから招待されています。</p>
+              {!authLoaded ? (
+                <p>ログイン状態を確認しています…</p>
+              ) : authenticatedUser ? (
+                <button className="primary-button" onClick={joinPair} type="button">ペアに参加する</button>
+              ) : (
+                <a className="settings-login" href={`/api/auth/google?returnTo=${returnTo}`}>Googleでログインして参加</a>
+              )}
+            </>
+          )}
+        </section>
+      </main>
+    );
+  }
 
   if (view === "settings") {
     return (
@@ -199,12 +315,46 @@ function App() {
             {appState.leftOnLeft ? `${participantNames.left} と ${participantNames.right} を入れ替える` : `${participantNames.right} と ${participantNames.left} を入れ替える`}
           </button>
         </section>
+        {authenticatedUser && (
+          <section className="settings-section">
+            <h1>ペア</h1>
+            {!pairState ? (
+              <p>ペア情報を確認しています…</p>
+            ) : pairState.pair ? (
+              <p>{pairState.pair.left.displayName} と {pairState.pair.right.displayName} のペアです。</p>
+            ) : pairState.invitation ? (
+              <div className="pending-invitation">
+                <p><strong>{pairState.invitation.invitedEmail}</strong> の受諾を待っています。</p>
+                <div className="settings-actions">
+                  <button className="outline-button" onClick={() => void submitInvitation(pairState.invitation!.invitedEmail)} type="button">招待を再送</button>
+                  <button className="danger-button" onClick={() => void removeInvitation(pairState.invitation!.id)} type="button">招待を取り消す</button>
+                </div>
+              </div>
+            ) : (
+              <form className="invitation-form" onSubmit={(event) => { event.preventDefault(); void submitInvitation(inviteEmail); }}>
+                <label className="settings-field">
+                  <span>相手のメールアドレス</span>
+                  <input
+                    inputMode="email"
+                    onChange={(event) => setInviteEmail(event.target.value)}
+                    placeholder="friend@example.com"
+                    required
+                    type="email"
+                    value={inviteEmail}
+                  />
+                </label>
+                <button className="primary-button" type="submit">招待メールを送る</button>
+              </form>
+            )}
+          </section>
+        )}
         <section className="settings-section destructive-section">
           <h1>精算・ペア</h1>
           <p>精算リセット、ペア解消、アカウント削除は、相手の承認が必要です。</p>
           <button className="outline-button" type="button">精算リセットを申請</button>
           <button className="danger-button" type="button">ペア解消を申請</button>
         </section>
+        {message && <p className="form-message" role="status">{message}</p>}
       </main>
     );
   }

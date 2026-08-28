@@ -16,8 +16,8 @@ const encoder = new TextEncoder();
 const base64Url = (bytes: Uint8Array) =>
   btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 
-const randomToken = () => base64Url(crypto.getRandomValues(new Uint8Array(32)));
-const hashToken = async (value: string) =>
+export const randomToken = () => base64Url(crypto.getRandomValues(new Uint8Array(32)));
+export const hashToken = async (value: string) =>
   base64Url(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value))));
 
 const cookieValue = (request: Request, name: string) =>
@@ -30,7 +30,7 @@ const jsonError = (message: string, status = 400) => Response.json({ error: mess
 
 const callbackUrl = (env: AuthEnv) => `${env.APP_ORIGIN}/api/auth/google/callback`;
 
-export const beginGoogleLogin = async (env: AuthEnv) => {
+export const beginGoogleLogin = async (request: Request, env: AuthEnv) => {
   if (!env.GOOGLE_CLIENT_ID) return jsonError("Googleログインはまだ設定されていません。", 503);
 
   const state = randomToken();
@@ -48,10 +48,14 @@ export const beginGoogleLogin = async (env: AuthEnv) => {
     prompt: "select_account",
   }).toString();
 
-  return new Response(null, {
-    status: 302,
-    headers: { Location: url.toString(), "Set-Cookie": cookie("pb_oauth", `${state}.${verifier}`, 600) },
-  });
+  const requestedReturnPath = new URL(request.url).searchParams.get("returnTo");
+  const returnPath = requestedReturnPath?.startsWith("/") && !requestedReturnPath.startsWith("//")
+    ? requestedReturnPath
+    : "/";
+  const headers = new Headers({ Location: url.toString() });
+  headers.append("Set-Cookie", cookie("pb_oauth", `${state}.${verifier}`, 600));
+  headers.append("Set-Cookie", cookie("pb_return", encodeURIComponent(returnPath), 600));
+  return new Response(null, { status: 302, headers });
 };
 
 export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
@@ -103,23 +107,34 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
   await env.DB.prepare("INSERT INTO sessions (id, user_id, token_hash, expires_at) VALUES (?, ?, ?, ?)")
     .bind(crypto.randomUUID(), user.id, await hashToken(sessionToken), expires).run();
 
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: env.APP_ORIGIN,
-      "Set-Cookie": `${cookie("pb_session", sessionToken, 30 * 24 * 60 * 60)}, ${cookie("pb_oauth", "", 0)}`,
-    },
-  });
+  const savedReturnPath = decodeURIComponent(cookieValue(request, "pb_return") ?? "/");
+  const returnPath = savedReturnPath.startsWith("/") && !savedReturnPath.startsWith("//") ? savedReturnPath : "/";
+  const headers = new Headers({ Location: `${env.APP_ORIGIN}${returnPath === "/" ? "" : returnPath}` });
+  headers.append("Set-Cookie", cookie("pb_session", sessionToken, 30 * 24 * 60 * 60));
+  headers.append("Set-Cookie", cookie("pb_oauth", "", 0));
+  headers.append("Set-Cookie", cookie("pb_return", "", 0));
+  return new Response(null, { status: 302, headers });
 };
 
 export const getCurrentUser = async (request: Request, env: AuthEnv) => {
+  const user = await getAuthenticatedUser(request, env);
+  return Response.json({ user: user ? { id: user.id, displayName: user.displayName } : null });
+};
+
+export type AuthenticatedUser = {
+  id: string;
+  email: string;
+  displayName: string;
+};
+
+export const getAuthenticatedUser = async (request: Request, env: AuthEnv): Promise<AuthenticatedUser | null> => {
   const token = cookieValue(request, "pb_session");
-  if (!token) return Response.json({ user: null });
+  if (!token) return null;
   const tokenHash = await hashToken(token);
   const user = await env.DB.prepare(`
-    SELECT users.id, users.display_name
+    SELECT users.id, users.email, users.display_name
     FROM sessions JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = ? AND sessions.expires_at > CURRENT_TIMESTAMP
-  `).bind(tokenHash).first<{ id: string; display_name: string }>();
-  return Response.json({ user: user ? { id: user.id, displayName: user.display_name } : null });
+  `).bind(tokenHash).first<{ id: string; email: string; display_name: string }>();
+  return user ? { id: user.id, email: user.email, displayName: user.display_name } : null;
 };

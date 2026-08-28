@@ -89,9 +89,19 @@ button { cursor: pointer; }
 .settings-field span { font-size: 13px; font-weight: 700; }
 .settings-field input { background: #d7e3db; border: 0; border-radius: 10px; color: #006428; outline: 0; padding: 11px 12px; }
 .settings-login { background: #006428; border-radius: 8px; color: #f9fffb; display: inline-block; font-size: 13px; font-weight: 700; margin-bottom: 14px; padding: 9px 12px; text-decoration: none; }
+.primary-button { background: #006428; border: 0; border-radius: 10px; color: #f9fffb; font-size: 13px; font-weight: 700; padding: 11px 14px; }
 .outline-button, .danger-button { background: transparent; border: 1px solid #006428; border-radius: 10px; color: #006428; display: block; font-size: 13px; font-weight: 700; margin-top: 10px; padding: 11px 13px; text-align: left; width: 100%; }
 .danger-button { border-color: #9e2e21; color: #9e2e21; }
 .destructive-section { margin-top: 20px; }
+.invitation-form .primary-button { width: 100%; }
+.pending-invitation strong { overflow-wrap: anywhere; }
+.settings-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
+.settings-actions button { margin-top: 0; text-align: center; }
+.invitation-page { overflow-y: auto; }
+.invitation-page .topbar { height: 104px; }
+.invitation-card { border-top: 1px solid rgb(0 100 40 / 32%); padding: 34px 24px; }
+.invitation-card h1 { font-size: 22px; margin: 0 0 18px; }
+.invitation-card p { font-size: 14px; line-height: 1.8; margin: 0 0 20px; }
 @media (min-width: 600px) { .app-shell { border-radius: 58px; height: min(852px, calc(100dvh - 14px)); padding-top: 0; } body { padding: 7px 0; } }
 @media (max-width: 599px) { html, body, #root { background: #f9fffb; height: 100%; overflow: hidden; } body { inset: 0; position: fixed; width: 100%; } }
 @media (max-width: 390px) { .balance-panel { padding-left: 96px; } .segmented button { min-width: 76px; } .amount-grid, .individual-memos { gap: 28px; } }
