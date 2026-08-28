@@ -10,7 +10,7 @@ button { cursor: pointer; }
 .brand { color: #006428; font-size: 20px; font-weight: 900; letter-spacing: -.65px; text-decoration: none; }
 .settings-button { background: transparent; border: 0; color: #006428; font-size: 16px; font-weight: 900; letter-spacing: 1px; opacity: .52; padding: 8px 0 8px 8px; }
 
-.balance-panel { border-bottom: 1px solid #006428; display: grid; grid-template-columns: 1fr auto; grid-template-rows: 58px 58px; padding: 0 22px 10px 118px; }
+.balance-panel { border-bottom: 1px solid #006428; column-gap: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 58px 58px; padding: 0 22px 10px 118px; }
 .balance-copy, .difference-copy { display: contents; }
 .balance-copy p, .difference-copy p { align-self: center; font-size: 20px; font-weight: 500; margin: 0; text-align: right; white-space: nowrap; }
 .balance-copy strong, .difference-copy strong { align-self: center; background: #d7e3db; border-radius: 12px; font-size: 28px; font-weight: 700; letter-spacing: -1.7px; line-height: 41px; min-width: 109px; padding: 0 10px; text-align: right; white-space: nowrap; }
