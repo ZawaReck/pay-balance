@@ -41,9 +41,9 @@ button { cursor: pointer; }
 .amount-field input, .total-field input { background: transparent; border: 0; color: #006428; font-size: 20px; font-weight: 700; height: 27px; min-width: 0; outline: 0; padding: 0; text-align: right; width: 100%; }
 .amount-field > div { flex: 1; }
 .amount-field small, .total-field small { font-size: 10px; font-weight: 700; }
-.total-field { background: #d7e3db; border-radius: 5px; display: block; height: 27px; margin-top: 26px; padding: 0 8px; position: relative; }
+.total-field { background: #d7e3db; border-radius: 8px; display: block; height: 27px; margin-top: 26px; padding: 0; position: relative; }
 .total-field > span { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
-.total-field > div { background: transparent; }
+.total-field > div { background: transparent; height: 100%; }
 .memo-field { background: #d7e3db; border-radius: 4px; display: flex; height: 27px; margin-top: 18px; overflow: hidden; }
 .memo-field input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 4px 10px; text-align: right; width: 100%; }
 .memo-field input::placeholder { text-align: right; }
