@@ -92,5 +92,5 @@ button { cursor: pointer; }
 .danger-button { border-color: #9e2e21; color: #9e2e21; }
 .destructive-section { margin-top: 20px; }
 @media (min-width: 600px) { .app-shell { border-radius: 58px; height: min(852px, calc(100dvh - 14px)); padding-top: 0; } body { padding: 7px 0; } }
-@media (max-width: 599px) { html, body, #root { height: 100%; overflow: hidden; } body { inset: 0; position: fixed; width: 100%; } }
+@media (max-width: 599px) { html, body, #root { background: #f9fffb; height: 100%; overflow: hidden; } body { inset: 0; position: fixed; width: 100%; } }
 @media (max-width: 390px) { .balance-panel { padding-left: 96px; } .segmented button { min-width: 76px; } .amount-grid, .individual-memos { gap: 28px; } }
