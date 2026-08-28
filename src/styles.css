@@ -52,7 +52,12 @@ button { cursor: pointer; }
 .individual-memo span { align-items: center; color: #f9fffb; display: flex; flex: 0 0 72px; font-size: 11px; font-weight: 700; justify-content: flex-end; padding-right: 5px; white-space: nowrap; }
 .individual-memo input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 3px 6px 3px 2px; text-align: right; width: 100%; }
 .save-button { background: #006428; border: 0; border-radius: 9px; color: #f9fffb; float: right; font-size: 11px; font-weight: 700; margin: 8px 0 11px; padding: 5px 8px; }
-.form-message { clear: both; font-size: 12px; margin: 8px 0 9px; text-align: right; }
+.form-message { animation: toast-message 2.2s ease both; background: rgb(0 100 40 / 92%); border-radius: 18px; bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px)); color: #f9fffb; font-size: 12px; left: 50%; margin: 0; padding: 8px 14px; position: fixed; text-align: center; transform: translateX(-50%); white-space: nowrap; z-index: 10; }
+@keyframes toast-message {
+  0% { opacity: 0; transform: translate(-50%, 8px); }
+  12%, 78% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, 4px); }
+}
 
 .history { background: linear-gradient(90deg, #c6f1f0 0 50%, #c6ffdd 50% 100%); border-top: 1px solid #006428; border-radius: 0 0 58px 58px; clear: both; min-height: 386px; overflow: hidden; }
 .history-title { display: none; }

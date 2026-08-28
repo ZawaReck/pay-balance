@@ -82,6 +82,12 @@ function App() {
       .catch(() => setAuthenticatedUser(null));
   }, []);
 
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(""), 2200);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+
   const amountFor = (value: string) => (value === "" ? 0 : Number(value));
   const toggleMode = () => {
     if (mode === "individual") {
