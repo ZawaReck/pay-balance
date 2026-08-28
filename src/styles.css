@@ -38,14 +38,14 @@ button { cursor: pointer; }
 .amount-grid { display: grid; gap: 43px; grid-template-columns: 1fr 1fr; height: 27px; }
 .amount-field { align-items: center; display: flex; gap: 9px; height: 27px; min-width: 0; }
 .amount-field > span { font-size: 20px; font-weight: 500; white-space: nowrap; }
-.amount-field > div, .total-field > div { align-items: baseline; background: #d7e3db; border-radius: 8px; display: flex; gap: 3px; min-width: 0; padding: 0 6px; }
+.amount-field > div, .total-field > div { align-items: baseline; background: #d7e3db; border-radius: 5px; display: flex; gap: 3px; min-width: 0; padding: 0 6px; }
 .amount-field input, .total-field input { background: transparent; border: 0; color: #006428; font-size: 20px; font-weight: 700; height: 27px; min-width: 0; outline: 0; padding: 0; text-align: right; width: 100%; }
 .amount-field > div { flex: 1; }
 .amount-field small, .total-field small { font-size: 10px; font-weight: 700; }
-.total-field { background: #d7e3db; border-radius: 8px; display: block; height: 27px; padding: 0; position: relative; }
+.total-field { background: #d7e3db; border-radius: 5px; display: block; height: 27px; padding: 0; position: relative; }
 .total-field > span { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 .total-field > div { background: transparent; height: 100%; }
-.memo-field { background: #d7e3db; border-radius: 4px; display: flex; height: 27px; overflow: hidden; }
+.memo-field { background: #d7e3db; border-radius: 5px; display: flex; height: 27px; overflow: hidden; }
 .memo-field input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 4px 10px; text-align: right; width: 100%; }
 .memo-field input::placeholder { color: #f9fffb; font-size: 11px; font-weight: 700; opacity: 1; text-align: right; }
 .individual-memos { display: grid; gap: 43px; grid-template-columns: 1fr 1fr; }
