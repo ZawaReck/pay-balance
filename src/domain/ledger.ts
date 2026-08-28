@@ -75,6 +75,7 @@ export const applyExpense = (base: LedgerBase, expense: Expense): LedgerBase => 
 export const calculateLedger = (
   expenses: Expense[],
   base: LedgerBase = { leftNet: 0, lastOddExtra: null },
+  rightParticipant: Participant = "right",
 ): LedgerResult => {
   const calculated = expenses.reduce(applyExpense, base);
   const rightNet = -calculated.leftNet;
@@ -82,7 +83,12 @@ export const calculateLedger = (
   return {
     ...calculated,
     rightNet,
-    nextPayer: calculated.leftNet > 0 ? "right" : "left",
+    nextPayer:
+      calculated.leftNet === 0
+        ? rightParticipant
+        : calculated.leftNet > 0
+          ? "right"
+          : "left",
     difference: Math.abs(calculated.leftNet),
   };
 };

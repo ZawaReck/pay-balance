@@ -14,23 +14,28 @@ import "./styles.css";
 
 const storageKey = "paybalance-demo-ledger";
 
-type AppState = { expenses: Expense[]; base: LedgerBase };
+type AppState = {
+  expenses: Expense[];
+  base: LedgerBase;
+  names: Record<Participant, string>;
+  leftOnLeft: boolean;
+};
 
 const initialState: AppState = {
   base: { leftNet: 0, lastOddExtra: null },
+  names: { left: "はなこ", right: "たろう" },
+  leftOnLeft: true,
   expenses: [
     { id: "sample-1", payer: "right", mode: "split", leftAmount: 570, rightAmount: 0, memo: "コメダ" },
     { id: "sample-2", payer: "left", mode: "individual", leftAmount: 0, rightAmount: 1258, memo: "ドトール" },
   ],
 };
 
-const participantNames: Record<Participant, string> = { left: "はなこ", right: "たろう" };
-
 const loadState = (): AppState => {
   try {
     const saved = localStorage.getItem(storageKey);
     if (!saved) return initialState;
-    return JSON.parse(saved) as AppState;
+    return { ...initialState, ...JSON.parse(saved) } as AppState;
   } catch {
     return initialState;
   }
@@ -46,9 +51,10 @@ function App() {
   const [rightAmount, setRightAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [message, setMessage] = useState("");
+  const [view, setView] = useState<"home" | "settings">("home");
 
   const ledger = useMemo(
-    () => calculateLedger(appState.expenses, appState.base),
+    () => calculateLedger(appState.expenses, appState.base, appState.leftOnLeft ? "right" : "left"),
     [appState],
   );
 
@@ -82,7 +88,7 @@ function App() {
     setAppState((current) => {
       const added = [...current.expenses, expense];
       const trimmed = moveOldestToBase(current.base, added);
-      return trimmed;
+      return { ...current, ...trimmed };
     });
     setLeftAmount("");
     setRightAmount("");
@@ -98,13 +104,54 @@ function App() {
     setMessage("記録を削除しました。");
   };
 
-  const selectedName = participantNames[payer];
+  const displayedParticipants: Participant[] = appState.leftOnLeft ? ["left", "right"] : ["right", "left"];
+  const participantNames = appState.names;
+
+  if (view === "settings") {
+    return (
+      <main className="app-shell settings-page">
+        <header className="topbar">
+          <button className="back-button" onClick={() => setView("home")} type="button">← 戻る</button>
+          <span className="brand">設定</span>
+        </header>
+        <section className="settings-section">
+          <h1>表示名</h1>
+          {(["left", "right"] as const).map((participant) => (
+            <label className="settings-field" key={participant}>
+              <span>{participant === "left" ? "左側の人" : "右側の人"}</span>
+              <input
+                maxLength={24}
+                onChange={(event) => setAppState((current) => ({
+                  ...current,
+                  names: { ...current.names, [participant]: event.target.value },
+                }))}
+                value={participantNames[participant]}
+              />
+            </label>
+          ))}
+        </section>
+        <section className="settings-section">
+          <h1>表示順</h1>
+          <p>残高が同額のとき、右側の人が次に支払う人になります。</p>
+          <button className="outline-button" onClick={() => setAppState((current) => ({ ...current, leftOnLeft: !current.leftOnLeft }))} type="button">
+            {appState.leftOnLeft ? `${participantNames.left} と ${participantNames.right} を入れ替える` : `${participantNames.right} と ${participantNames.left} を入れ替える`}
+          </button>
+        </section>
+        <section className="settings-section destructive-section">
+          <h1>精算・ペア</h1>
+          <p>精算リセット、ペア解消、アカウント削除は、相手の承認が必要です。</p>
+          <button className="outline-button" type="button">精算リセットを申請</button>
+          <button className="danger-button" type="button">ペア解消を申請</button>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="PayBalance ホーム">PayBalance</a>
-        <button className="settings-button" type="button" aria-label="設定を開く">設定</button>
+        <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
       </header>
 
       <section className="balance-panel" aria-label="現在の支払いバランス">
@@ -122,7 +169,7 @@ function App() {
         <div className="section-heading">
           <span>払う人</span>
           <div className="segmented" aria-label="支払う人">
-            {(["left", "right"] as const).map((participant) => (
+            {displayedParticipants.map((participant) => (
               <button
                 className={payer === participant ? `person-${participant} selected` : `person-${participant}`}
                 key={participant}
@@ -144,7 +191,7 @@ function App() {
 
         {mode === "individual" ? (
           <div className="amount-grid">
-            {(["left", "right"] as const).map((participant) => (
+            {displayedParticipants.map((participant) => (
               <label className={`amount-field person-${participant}`} key={participant}>
                 <span>{participantNames[participant]}</span>
                 <div>

@@ -27,7 +27,7 @@ describe("支払いバランス", () => {
     expect(getBurden(first, null)).toMatchObject({ left: 1000, right: 1001 });
     expect(getBurden(second, "right")).toMatchObject({ left: 1001, right: 1000 });
     expect(result.difference).toBe(0);
-    expect(result.nextPayer).toBe("left");
+    expect(result.nextPayer).toBe("right");
   });
 
   it("個別負担では空欄相当の0円を受け付ける", () => {
@@ -44,5 +44,11 @@ describe("支払いバランス", () => {
 
     expect(result.difference).toBe(1000);
     expect(result.nextPayer).toBe("right");
+  });
+
+  it("残高が同額なら画面右側の人を次の支払者にする", () => {
+    const result = calculateLedger([], { leftNet: 0, lastOddExtra: null }, "left");
+
+    expect(result.nextPayer).toBe("left");
   });
 });
