@@ -17,8 +17,8 @@ button { cursor: pointer; }
 .balance-copy p { grid-column: 1; grid-row: 1; }
 .balance-copy strong { grid-column: 2; grid-row: 1; }
 .difference-copy p { grid-column: 1; grid-row: 2; text-align: right; }
-.difference-copy strong { grid-column: 2; grid-row: 2; }
-.difference-copy strong small { font-size: 12px; letter-spacing: 0; margin-left: 5px; }
+.difference-copy strong { grid-column: 2; grid-row: 2; padding-right: 28px; position: relative; }
+.difference-copy strong small { bottom: 4px; font-size: 12px; letter-spacing: 0; line-height: 1; position: absolute; right: 8px; }
 
 .entry-form { padding: 41px 20px 0; }
 .form-controls { align-items: center; display: flex; justify-content: space-between; }
@@ -45,7 +45,6 @@ button { cursor: pointer; }
 .total-field > span { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 .total-field > div { background: transparent; }
 .memo-field { background: #d7e3db; border-radius: 4px; display: flex; height: 27px; margin-top: 18px; overflow: hidden; }
-.memo-field span { align-items: center; background: #d7e3db; color: #f9fffb; display: flex; flex: 0 0 154px; font-size: 13px; font-weight: 700; justify-content: flex-end; padding: 0 10px; }
 .memo-field input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 4px 10px; text-align: right; width: 100%; }
 .memo-field input::placeholder { text-align: right; }
 .individual-memos { display: grid; gap: 43px; grid-template-columns: 1fr 1fr; margin-top: 18px; }

@@ -309,8 +309,7 @@ function App() {
 
         {mode === "split" && (
           <label className="memo-field">
-            <span>メモ（任意）</span>
-            <input maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="例：ドトール" value={memo} />
+            <input aria-label="メモ（任意）" maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="メモ（任意）" value={memo} />
           </label>
         )}
         <button className="save-button" type="submit">記録</button>
