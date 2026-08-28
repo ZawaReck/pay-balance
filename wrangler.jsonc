@@ -8,6 +8,13 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pay-balance",
+      "database_id": "1880298f-755c-4ced-ad4f-438c4ae06962"
+    }
+  ],
   "observability": {
     "enabled": true
   }
