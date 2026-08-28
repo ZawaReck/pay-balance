@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   calculateLedger,
+  getBurden,
   getExpenseTotal,
   isValidExpense,
   moveOldestToBase,
@@ -114,6 +115,15 @@ function App() {
 
   const displayedParticipants: Participant[] = appState.leftOnLeft ? ["left", "right"] : ["right", "left"];
   const participantNames = appState.names;
+  const historyRows = useMemo(() => {
+    let previousOddExtra = appState.base.lastOddExtra;
+    const rows = appState.expenses.map((expense) => {
+      const burden = getBurden(expense, previousOddExtra);
+      previousOddExtra = burden.oddExtra;
+      return { expense, burden };
+    });
+    return rows.reverse();
+  }, [appState.base.lastOddExtra, appState.expenses]);
 
   if (view === "settings") {
     return (
@@ -160,7 +170,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="PayBalance ホーム">PayBalance</a>
-        <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
+        <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">•••</button>
       </header>
 
       <section className="balance-panel" aria-label="現在の支払いバランス">
@@ -175,26 +185,25 @@ function App() {
       </section>
 
       <form className="entry-form" onSubmit={addExpense}>
-        <div className="section-heading">
-          <span>払う人</span>
-          <div className="segmented" aria-label="支払う人">
-            {displayedParticipants.map((participant) => (
-              <button
-                className={payer === participant ? `person-${participant} selected` : `person-${participant}`}
-                key={participant}
-                onClick={() => setPayer(participant)}
-                type="button"
-              >
-                {participantNames[participant]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="mode-row">
+        <div className="form-controls">
           <div className="mode-switch" aria-label="負担方式">
             <button className={mode === "individual" ? "active" : ""} onClick={() => setMode("individual")} type="button">個別</button>
             <button className={mode === "split" ? "active" : ""} onClick={() => setMode("split")} type="button">一括</button>
+          </div>
+          <div className="section-heading">
+            <span>払う人</span>
+            <div className="segmented" aria-label="支払う人">
+              {displayedParticipants.map((participant) => (
+                <button
+                  className={payer === participant ? `person-${participant} selected` : `person-${participant}`}
+                  key={participant}
+                  onClick={() => setPayer(participant)}
+                  type="button"
+                >
+                  {participantNames[participant]}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -251,17 +260,22 @@ function App() {
         {appState.expenses.length === 0 ? (
           <p className="empty-state">まだ記録がありません。</p>
         ) : (
-          <ul>
-            {[...appState.expenses].reverse().map((expense) => (
-              <li key={expense.id}>
-                <div className="history-detail">
-                  <strong>{formatYen(getExpenseTotal(expense))}</strong>
-                  {expense.memo && <span>{expense.memo}</span>}
-                </div>
-                <span className={`payer-badge person-${expense.payer}`} aria-label={`${participantNames[expense.payer]}が支払いました`}>
-                  <span>{expense.payer === "left" ? "L" : "R"}</span>
-                </span>
-                <button className="delete-button" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
+          <ul className="history-grid">
+            {historyRows.map(({ expense, burden }) => (
+              <li className="history-row" key={expense.id}>
+                {(["left", "right"] as const).map((participant) => (
+                  <div className={`history-cell person-${participant}`} key={participant}>
+                    <span>{expense.payer === participant ? expense.memo : ""}</span>
+                    <strong>{formatYen(burden[participant])}</strong>
+                  </div>
+                ))}
+                <button className="delete-button" onClick={() => deleteExpense(expense.id)} type="button" aria-label={`${expense.memo || formatYen(getExpenseTotal(expense))}を削除`}>×</button>
+              </li>
+            ))}
+            {Array.from({ length: Math.max(0, 10 - historyRows.length) }, (_, index) => (
+              <li className="history-row placeholder-row" key={`placeholder-${index}`} aria-hidden="true">
+                <div className="history-cell person-left"><span></span><strong></strong></div>
+                <div className="history-cell person-right"><span></span><strong></strong></div>
               </li>
             ))}
           </ul>
