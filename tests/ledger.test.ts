@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateLedger, getBurden, type Expense } from "../src/domain/ledger";
+import { calculateLedger, getBurden, getExpenseMemo, type Expense } from "../src/domain/ledger";
 
 const split = (payer: "left" | "right", total: number): Expense => ({
   id: crypto.randomUUID(),
@@ -50,5 +50,35 @@ describe("支払いバランス", () => {
     const result = calculateLedger([], { leftNet: 0, lastOddExtra: null }, "left");
 
     expect(result.nextPayer).toBe("left");
+  });
+
+  it("個別負担のメモを左右それぞれに保持する", () => {
+    const expense: Expense = {
+      id: "individual-memos",
+      payer: "right",
+      mode: "individual",
+      leftAmount: 500,
+      rightAmount: 800,
+      memo: "",
+      leftMemo: "ランチ",
+      rightMemo: "日用品",
+    };
+
+    expect(getExpenseMemo(expense, "left")).toBe("ランチ");
+    expect(getExpenseMemo(expense, "right")).toBe("日用品");
+  });
+
+  it("旧形式の個別メモは支払者側に表示する", () => {
+    const expense: Expense = {
+      id: "legacy-memo",
+      payer: "left",
+      mode: "individual",
+      leftAmount: 500,
+      rightAmount: 0,
+      memo: "交通費",
+    };
+
+    expect(getExpenseMemo(expense, "left")).toBe("交通費");
+    expect(getExpenseMemo(expense, "right")).toBe("");
   });
 });

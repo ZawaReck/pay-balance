@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   calculateLedger,
   getBurden,
+  getExpenseMemo,
   getExpenseTotal,
   isValidExpense,
   moveOldestToBase,
@@ -28,7 +29,7 @@ const initialState: AppState = {
   leftOnLeft: true,
   expenses: [
     { id: "sample-1", payer: "right", mode: "split", leftAmount: 570, rightAmount: 0, memo: "コメダ" },
-    { id: "sample-2", payer: "left", mode: "individual", leftAmount: 0, rightAmount: 1258, memo: "ドトール" },
+    { id: "sample-2", payer: "left", mode: "individual", leftAmount: 0, rightAmount: 1258, memo: "", rightMemo: "ドトール" },
   ],
 };
 
@@ -51,6 +52,12 @@ function App() {
   const [leftAmount, setLeftAmount] = useState("");
   const [rightAmount, setRightAmount] = useState("");
   const [memo, setMemo] = useState("");
+  const [leftMemo, setLeftMemo] = useState("");
+  const [rightMemo, setRightMemo] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [revealedExpenseId, setRevealedExpenseId] = useState<string | null>(null);
+  const touchStart = useRef<{ id: string; x: number } | null>(null);
+  const suppressedClickId = useRef<string | null>(null);
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
   const [authenticatedUser, setAuthenticatedUser] = useState<string | null>(null);
@@ -76,17 +83,28 @@ function App() {
   }, []);
 
   const amountFor = (value: string) => (value === "" ? 0 : Number(value));
-  const total = amountFor(leftAmount) + amountFor(rightAmount);
+  const toggleMode = () => {
+    if (mode === "individual") {
+      const combined = amountFor(leftAmount) + amountFor(rightAmount);
+      setLeftAmount(combined === 0 ? "" : String(combined));
+      setRightAmount("");
+      setMode("split");
+      return;
+    }
+    setMode("individual");
+  };
 
   const addExpense = (event: React.FormEvent) => {
     event.preventDefault();
     const expense: Expense = {
-      id: crypto.randomUUID(),
+      id: editingId ?? crypto.randomUUID(),
       payer,
       mode,
       leftAmount: amountFor(leftAmount),
       rightAmount: amountFor(rightAmount),
-      memo: memo.trim(),
+      memo: mode === "split" ? memo.trim() : "",
+      leftMemo: mode === "individual" ? leftMemo.trim() : undefined,
+      rightMemo: mode === "individual" ? rightMemo.trim() : undefined,
     };
 
     if (!isValidExpense(expense)) {
@@ -95,14 +113,32 @@ function App() {
     }
 
     setAppState((current) => {
-      const added = [...current.expenses, expense];
+      const added = editingId
+        ? current.expenses.map((saved) => saved.id === editingId ? expense : saved)
+        : [...current.expenses, expense];
       const trimmed = moveOldestToBase(current.base, added);
       return { ...current, ...trimmed };
     });
     setLeftAmount("");
     setRightAmount("");
     setMemo("");
-    setMessage("支払いを記録しました。");
+    setLeftMemo("");
+    setRightMemo("");
+    setEditingId(null);
+    setMessage(editingId ? "記録を更新しました。" : "支払いを記録しました。");
+  };
+
+  const editExpense = (expense: Expense) => {
+    setEditingId(expense.id);
+    setPayer(expense.payer);
+    setMode(expense.mode);
+    setLeftAmount(String(expense.leftAmount || ""));
+    setRightAmount(String(expense.rightAmount || ""));
+    setMemo(expense.memo);
+    setLeftMemo(expense.leftMemo ?? (expense.mode === "individual" && expense.payer === "left" ? expense.memo : ""));
+    setRightMemo(expense.rightMemo ?? (expense.mode === "individual" && expense.payer === "right" ? expense.memo : ""));
+    setRevealedExpenseId(null);
+    setMessage("記録を編集中です。");
   };
 
   const deleteExpense = (id: string) => {
@@ -111,6 +147,8 @@ function App() {
       expenses: current.expenses.filter((expense) => expense.id !== id),
     }));
     setMessage("記録を削除しました。");
+    if (editingId === id) setEditingId(null);
+    setRevealedExpenseId(null);
   };
 
   const displayedParticipants: Participant[] = appState.leftOnLeft ? ["left", "right"] : ["right", "left"];
@@ -175,21 +213,28 @@ function App() {
 
       <section className="balance-panel" aria-label="現在の支払いバランス">
         <div className="balance-copy">
-          <p>次に支払う人</p>
+          <p>次に払う人</p>
           <strong>{participantNames[ledger.nextPayer]}</strong>
         </div>
         <div className="difference-copy">
           <p>差分</p>
-          <strong>{formatYen(ledger.difference)}</strong>
+          <strong><span>{ledger.difference.toLocaleString("ja-JP")}</span><small>円</small></strong>
         </div>
       </section>
 
       <form className="entry-form" onSubmit={addExpense}>
         <div className="form-controls">
-          <div className="mode-switch" aria-label="負担方式">
-            <button className={mode === "individual" ? "active" : ""} onClick={() => setMode("individual")} type="button">個別</button>
-            <button className={mode === "split" ? "active" : ""} onClick={() => setMode("split")} type="button">一括</button>
-          </div>
+          <button
+            aria-label={`負担方式：${mode === "individual" ? "個別" : "一括"}`}
+            aria-pressed={mode === "split"}
+            className={`mode-switch ${mode === "split" ? "is-split" : "is-individual"}`}
+            onClick={toggleMode}
+            type="button"
+          >
+            <span className="mode-individual">個別</span>
+            <span className="mode-split">一括</span>
+            <span className="mode-thumb" aria-hidden="true"></span>
+          </button>
           <div className="section-heading">
             <span>払う人</span>
             <div className="segmented" aria-label="支払う人">
@@ -208,26 +253,42 @@ function App() {
         </div>
 
         {mode === "individual" ? (
-          <div className="amount-grid">
-            {displayedParticipants.map((participant) => (
-              <label className={`amount-field person-${participant}`} key={participant}>
-                <span>{participantNames[participant]}</span>
-                <div>
+          <>
+            <div className="amount-grid">
+              {displayedParticipants.map((participant) => (
+                <label className="amount-field" key={participant}>
+                  <span>{participantNames[participant]}</span>
+                  <div>
+                    <input
+                      aria-label={`${participantNames[participant]}の負担額`}
+                      inputMode="numeric"
+                      min="0"
+                      onChange={(event) => participant === "left" ? setLeftAmount(event.target.value) : setRightAmount(event.target.value)}
+                      pattern="[0-9]*"
+                      placeholder="0"
+                      type="number"
+                      value={participant === "left" ? leftAmount : rightAmount}
+                    />
+                    <small>円</small>
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div className="individual-memos">
+              {displayedParticipants.map((participant) => (
+                <label className="individual-memo" key={participant}>
+                  <span>メモ（任意）</span>
                   <input
-                    aria-label={`${participantNames[participant]}の負担額`}
-                    inputMode="numeric"
-                    min="0"
-                    onChange={(event) => participant === "left" ? setLeftAmount(event.target.value) : setRightAmount(event.target.value)}
-                    pattern="[0-9]*"
-                    placeholder="0"
-                    type="number"
-                    value={participant === "left" ? leftAmount : rightAmount}
+                    aria-label={`${participantNames[participant]}のメモ`}
+                    maxLength={48}
+                    onChange={(event) => participant === "left" ? setLeftMemo(event.target.value) : setRightMemo(event.target.value)}
+                    placeholder=""
+                    value={participant === "left" ? leftMemo : rightMemo}
                   />
-                  <small>円</small>
-                </div>
-              </label>
-            ))}
-          </div>
+                </label>
+              ))}
+            </div>
+          </>
         ) : (
           <label className="total-field">
             <span>合計金額</span>
@@ -247,11 +308,13 @@ function App() {
           </label>
         )}
 
-        <label className="memo-field">
-          <span>メモ（任意）</span>
-          <input maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="例：ドトール" value={memo} />
-        </label>
-        <button className="save-button" type="submit">{formatYen(total || 0)} を記録</button>
+        {mode === "split" && (
+          <label className="memo-field">
+            <span>メモ（任意）</span>
+            <input maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="例：ドトール" value={memo} />
+          </label>
+        )}
+        <button className="save-button" type="submit">記録</button>
         {message && <p className="form-message" role="status">{message}</p>}
       </form>
 
@@ -263,13 +326,49 @@ function App() {
           <ul className="history-grid">
             {historyRows.map(({ expense, burden }) => (
               <li className="history-row" key={expense.id}>
-                {(["left", "right"] as const).map((participant) => (
-                  <div className={`history-cell person-${participant}`} key={participant}>
-                    <span>{expense.payer === participant ? expense.memo : ""}</span>
-                    <strong>{formatYen(burden[participant])}</strong>
-                  </div>
-                ))}
-                <button className="delete-button" onClick={() => deleteExpense(expense.id)} type="button" aria-label={`${expense.memo || formatYen(getExpenseTotal(expense))}を削除`}>×</button>
+                <button className="swipe-delete" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
+                <div
+                  className={`history-row-content ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
+                  onClick={() => {
+                    if (suppressedClickId.current === expense.id) {
+                      suppressedClickId.current = null;
+                      return;
+                    }
+                    if (revealedExpenseId === expense.id) {
+                      setRevealedExpenseId(null);
+                      return;
+                    }
+                    editExpense(expense);
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      editExpense(expense);
+                    }
+                  }}
+                  onTouchEnd={(event) => {
+                    const start = touchStart.current;
+                    if (!start || start.id !== expense.id) return;
+                    const distance = event.changedTouches[0].clientX - start.x;
+                    if (distance < -36) setRevealedExpenseId(expense.id);
+                    if (distance > 36) setRevealedExpenseId(null);
+                    if (Math.abs(distance) > 12) suppressedClickId.current = expense.id;
+                    touchStart.current = null;
+                  }}
+                  onTouchStart={(event) => { touchStart.current = { id: expense.id, x: event.touches[0].clientX }; }}
+                  role="button"
+                  tabIndex={0}
+                >
+                  {(["left", "right"] as const).map((participant) => {
+                    const cellMemo = getExpenseMemo(expense, participant);
+                    return (
+                      <div className={`history-cell person-${participant}`} key={participant}>
+                        <span>{cellMemo}</span>
+                        <strong>{formatYen(burden[participant])}</strong>
+                      </div>
+                    );
+                  })}
+                </div>
               </li>
             ))}
             {Array.from({ length: Math.max(0, 10 - historyRows.length) }, (_, index) => (

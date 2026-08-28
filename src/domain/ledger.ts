@@ -8,6 +8,8 @@ export interface Expense {
   leftAmount: number;
   rightAmount: number;
   memo: string;
+  leftMemo?: string;
+  rightMemo?: string;
 }
 
 export interface LedgerBase {
@@ -26,6 +28,15 @@ const opposite = (participant: Participant): Participant =>
 
 export const getExpenseTotal = (expense: Expense): number =>
   expense.leftAmount + expense.rightAmount;
+
+export const getExpenseMemo = (expense: Expense, participant: Participant): string => {
+  if (expense.mode === "split") {
+    return expense.payer === participant ? expense.memo : "";
+  }
+
+  const participantMemo = participant === "left" ? expense.leftMemo : expense.rightMemo;
+  return participantMemo ?? (expense.payer === participant ? expense.memo : "");
+};
 
 export const isValidExpense = (expense: Expense): boolean => {
   if (!Number.isInteger(expense.leftAmount) || !Number.isInteger(expense.rightAmount)) {
