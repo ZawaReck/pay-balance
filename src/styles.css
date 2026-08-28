@@ -46,7 +46,7 @@ button { cursor: pointer; }
 .total-field > span { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; overflow: hidden; position: absolute; white-space: nowrap; width: 1px; }
 .total-field > div { background: transparent; height: 100%; }
 .memo-field { background: #d7e3db; border-radius: 5px; display: flex; height: 27px; overflow: hidden; }
-.memo-field input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 4px 10px; text-align: right; width: 100%; }
+.memo-field input { background: transparent; border: 0; color: #006428; font-size: 13px; min-width: 0; outline: 0; padding: 3px 6px; text-align: right; width: 100%; }
 .memo-field input::placeholder { color: #f9fffb; font-size: 11px; font-weight: 700; opacity: 1; text-align: right; }
 .individual-memos { display: grid; gap: 43px; grid-template-columns: 1fr 1fr; }
 .individual-memo { background: #d7e3db; border-radius: 5px; display: flex; height: 27px; min-width: 0; overflow: hidden; }
