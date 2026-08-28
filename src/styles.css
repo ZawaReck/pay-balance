@@ -5,7 +5,7 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
-.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
+.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: env(safe-area-inset-top, 0); }
 .topbar { align-items: center; display: flex; height: 116px; justify-content: space-between; padding: 0 20px; }
 .brand { color: #006428; font-size: 20px; font-weight: 900; letter-spacing: -.65px; text-decoration: none; }
 .settings-button { background: transparent; border: 0; color: #006428; font-size: 16px; font-weight: 900; letter-spacing: 1px; opacity: .52; padding: 8px 0 8px 8px; }
@@ -91,4 +91,5 @@ button { cursor: pointer; }
 .danger-button { border-color: #9e2e21; color: #9e2e21; }
 .destructive-section { margin-top: 20px; }
 @media (min-width: 600px) { .app-shell { border-radius: 58px; height: min(852px, calc(100dvh - 14px)); padding-top: 0; } body { padding: 7px 0; } }
+@media (max-width: 599px) { html, body, #root { height: 100%; overflow: hidden; } body { inset: 0; position: fixed; width: 100%; } }
 @media (max-width: 390px) { .balance-panel { padding-left: 96px; } .segmented button { min-width: 76px; } .amount-grid, .individual-memos { gap: 28px; } }
