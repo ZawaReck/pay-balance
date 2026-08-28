@@ -1,0 +1,48 @@
+import { describe, expect, it } from "vitest";
+import { calculateLedger, getBurden, type Expense } from "../src/domain/ledger";
+
+const split = (payer: "left" | "right", total: number): Expense => ({
+  id: crypto.randomUUID(),
+  payer,
+  mode: "split",
+  leftAmount: total,
+  rightAmount: 0,
+  memo: "",
+});
+
+describe("支払いバランス", () => {
+  it("最初の奇数一括支出では支払っていない側の負担を1円多くする", () => {
+    const result = calculateLedger([split("left", 2001)]);
+
+    expect(result.nextPayer).toBe("right");
+    expect(result.difference).toBe(1001);
+    expect(result.lastOddExtra).toBe("right");
+  });
+
+  it("次の奇数一括支出では端数の負担者を交代させる", () => {
+    const first = split("left", 2001);
+    const second = split("right", 2001);
+    const result = calculateLedger([first, second]);
+
+    expect(getBurden(first, null)).toMatchObject({ left: 1000, right: 1001 });
+    expect(getBurden(second, "right")).toMatchObject({ left: 1001, right: 1000 });
+    expect(result.difference).toBe(0);
+    expect(result.nextPayer).toBe("left");
+  });
+
+  it("個別負担では空欄相当の0円を受け付ける", () => {
+    const result = calculateLedger([
+      {
+        id: "solo",
+        payer: "left",
+        mode: "individual",
+        leftAmount: 0,
+        rightAmount: 1000,
+        memo: "プレゼント",
+      },
+    ]);
+
+    expect(result.difference).toBe(1000);
+    expect(result.nextPayer).toBe("right");
+  });
+});

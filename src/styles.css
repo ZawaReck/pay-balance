@@ -1,0 +1,54 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap");
+
+:root { color: #006428; background: #d7e3db; font-family: "Noto Sans JP", system-ui, sans-serif; font-synthesis: none; }
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+.app-shell { background: #f9fffb; max-width: 560px; min-height: 100vh; margin: 0 auto; padding-bottom: 34px; box-shadow: 0 0 28px rgb(0 53 20 / 12%); }
+.topbar { align-items: center; display: flex; height: 104px; justify-content: space-between; padding: 0 22px; }
+.brand { color: #006428; font-size: 24px; font-weight: 900; letter-spacing: -.8px; text-decoration: none; }
+.settings-button { background: #d7e3db; border: 0; border-radius: 12px; color: #006428; font-size: 13px; font-weight: 700; padding: 10px 14px; }
+.balance-panel { border-bottom: 1px solid #006428; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; padding: 17px 22px 25px; }
+.balance-panel p { font-size: 15px; font-weight: 500; margin: 0 0 8px; }
+.balance-panel strong { font-size: clamp(28px, 8vw, 38px); letter-spacing: -1.8px; line-height: 1; }
+.difference-copy { text-align: right; }
+.entry-form { padding: 28px 22px 22px; }
+.section-heading { align-items: center; display: flex; gap: 16px; justify-content: space-between; }
+.section-heading > span { font-size: 18px; font-weight: 700; }
+.segmented { display: flex; gap: 6px; }
+.segmented button { border: 0; border-radius: 10px; color: #006428; font-size: 15px; font-weight: 700; min-width: 78px; padding: 9px 10px; }
+.person-left { background: #c6f1f0; }
+.person-right { background: #c6ffdd; }
+.segmented .selected { box-shadow: inset 0 0 0 2px #006428; }
+.mode-row { margin: 24px 0 18px; }
+.mode-switch { background: #006428; border-radius: 20px; display: flex; padding: 2px; width: 122px; }
+.mode-switch button { background: transparent; border: 0; border-radius: 18px; color: #f9fffb; font-size: 13px; font-weight: 700; padding: 6px 12px; }
+.mode-switch button.active { background: #f9fffb; color: #006428; }
+.amount-grid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+.amount-field, .total-field { border-radius: 12px; display: block; padding: 10px 13px; }
+.amount-field > span, .total-field > span { display: block; font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.amount-field > div, .total-field > div { align-items: baseline; display: flex; gap: 3px; }
+.amount-field input, .total-field input { background: transparent; border: 0; color: #006428; font-size: 25px; font-weight: 700; min-width: 0; outline: 0; padding: 0; width: 100%; }
+.amount-field small, .total-field small { font-size: 13px; font-weight: 700; }
+.total-field { background: #d7e3db; }
+.memo-field { background: #d7e3db; border-radius: 8px; display: flex; margin-top: 15px; overflow: hidden; }
+.memo-field span { align-items: center; background: #006428; color: #f9fffb; display: flex; flex: 0 0 112px; font-size: 12px; font-weight: 700; padding: 0 10px; }
+.memo-field input { background: transparent; border: 0; color: #006428; min-width: 0; outline: 0; padding: 10px; width: 100%; }
+.save-button { background: #006428; border: 0; border-radius: 14px; color: #f9fffb; font-weight: 700; margin-top: 18px; padding: 13px; width: 100%; }
+.form-message { font-size: 13px; margin: 10px 0 0; text-align: center; }
+.history { border-top: 1px solid #006428; padding: 22px 0 0; }
+.history-title { align-items: baseline; display: flex; justify-content: space-between; padding: 0 22px 13px; }
+.history-title h1 { font-size: 17px; margin: 0; }
+.history-title span, .sync-status { font-size: 12px; }
+.history ul { list-style: none; margin: 0; padding: 0; }
+.history li { align-items: center; border-bottom: 1px solid rgb(0 100 40 / 35%); display: flex; min-height: 58px; padding: 9px 22px; }
+.history-detail { flex: 1; min-width: 0; }
+.history-detail strong { display: block; font-size: 17px; }
+.history-detail span { display: block; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.payer-badge { align-items: center; border-radius: 8px; display: flex; font-size: 11px; font-weight: 900; height: 28px; justify-content: center; margin-left: 10px; width: 28px; }
+.payer-badge span { background: #006428; border-radius: 4px; color: #f9fffb; padding: 2px 5px; }
+.delete-button { background: transparent; border: 0; color: #006428; font-size: 11px; margin-left: 8px; padding: 6px 0 6px 6px; }
+.empty-state { color: rgb(0 100 40 / 70%); font-size: 14px; margin: 12px 22px; }
+.sync-status { color: rgb(0 100 40 / 65%); margin: 20px 22px 0; text-align: center; }
+@media (max-width: 390px) { .topbar { height: 88px; } .segmented button { min-width: 66px; } .balance-panel { padding-inline: 18px; } .entry-form { padding-inline: 18px; } }
