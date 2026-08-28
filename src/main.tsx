@@ -88,24 +88,6 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [message]);
 
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (!viewport) return;
-
-    const keepTopVisible = () => {
-      document.documentElement.style.setProperty("--visual-viewport-offset", `${viewport.offsetTop}px`);
-    };
-
-    keepTopVisible();
-    viewport.addEventListener("resize", keepTopVisible);
-    viewport.addEventListener("scroll", keepTopVisible);
-    return () => {
-      viewport.removeEventListener("resize", keepTopVisible);
-      viewport.removeEventListener("scroll", keepTopVisible);
-      document.documentElement.style.removeProperty("--visual-viewport-offset");
-    };
-  }, []);
-
   const amountFor = (value: string) => (value === "" ? 0 : Number(value));
   const toggleMode = () => {
     if (mode === "individual") {
