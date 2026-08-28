@@ -7,8 +7,11 @@ button, input { font: inherit; }
 button { cursor: pointer; }
 .app-shell { background: #f9fffb; max-width: 560px; min-height: 100vh; margin: 0 auto; padding-bottom: 34px; box-shadow: 0 0 28px rgb(0 53 20 / 12%); }
 .topbar { align-items: center; display: flex; height: 104px; justify-content: space-between; padding: 0 22px; }
+.header-actions { align-items: center; display: flex; gap: 8px; }
 .brand { color: #006428; font-size: 24px; font-weight: 900; letter-spacing: -.8px; text-decoration: none; }
 .settings-button { background: #d7e3db; border: 0; border-radius: 12px; color: #006428; font-size: 13px; font-weight: 700; padding: 10px 14px; }
+.login-button { color: #006428; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.signed-in-name { font-size: 12px; font-weight: 700; max-width: 88px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .back-button { background: transparent; border: 0; color: #006428; font-size: 14px; font-weight: 700; padding: 8px 0; }
 .settings-page .topbar { justify-content: flex-start; gap: 24px; }
 .settings-page .brand { font-size: 21px; }

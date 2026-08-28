@@ -52,6 +52,7 @@ function App() {
   const [memo, setMemo] = useState("");
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
+  const [authenticatedUser, setAuthenticatedUser] = useState<string | null>(null);
 
   const ledger = useMemo(
     () => calculateLedger(appState.expenses, appState.base, appState.leftOnLeft ? "right" : "left"),
@@ -65,6 +66,13 @@ function App() {
   useEffect(() => {
     setPayer(ledger.nextPayer);
   }, [ledger.nextPayer]);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((response) => response.ok ? response.json() as Promise<{ user?: { displayName?: string } }> : null)
+      .then((data: { user?: { displayName?: string } } | null) => setAuthenticatedUser(data?.user?.displayName ?? null))
+      .catch(() => setAuthenticatedUser(null));
+  }, []);
 
   const amountFor = (value: string) => (value === "" ? 0 : Number(value));
   const total = amountFor(leftAmount) + amountFor(rightAmount);
@@ -151,7 +159,10 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="PayBalance ホーム">PayBalance</a>
-        <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
+        <div className="header-actions">
+          {authenticatedUser ? <span className="signed-in-name">{authenticatedUser}</span> : <a className="login-button" href="/api/auth/google">Googleでログイン</a>}
+          <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
+        </div>
       </header>
 
       <section className="balance-panel" aria-label="現在の支払いバランス">
