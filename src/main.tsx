@@ -189,7 +189,6 @@ function App() {
         </section>
         <section className="settings-section">
           <h1>表示順</h1>
-          <p>残高が同額のとき、右側の人が次に支払う人になります。</p>
           <button className="outline-button" onClick={() => setAppState((current) => ({ ...current, leftOnLeft: !current.leftOnLeft }))} type="button">
             {appState.leftOnLeft ? `${participantNames.left} と ${participantNames.right} を入れ替える` : `${participantNames.right} と ${participantNames.left} を入れ替える`}
           </button>
