@@ -68,6 +68,8 @@ button { cursor: pointer; }
 .placeholder-row { opacity: .35; }
 .history-row-content { bottom: 0; display: grid; grid-template-columns: 1fr 1fr; left: 0; position: absolute; right: 0; top: 0; touch-action: pan-y; transform: translateX(0); transition: transform .2s cubic-bezier(.2, .8, .2, 1); z-index: 1; }
 .history-row-content.is-revealed { transform: translateX(-68px); }
+.history-row.is-pending .history-row-content { opacity: .62; }
+.pending-label { background: #006428; border-radius: 8px; color: #f9fffb; font-size: 9px; left: 50%; padding: 1px 5px; position: absolute; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; z-index: 2; }
 .history-cell { align-items: center; display: flex; gap: 8px; min-width: 0; padding: 0 16px; }
 .history-cell.person-left { background: #c6f1f0; }
 .history-cell.person-right { background: #c6ffdd; }

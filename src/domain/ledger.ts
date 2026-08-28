@@ -10,6 +10,8 @@ export interface Expense {
   memo: string;
   leftMemo?: string;
   rightMemo?: string;
+  version?: number;
+  pending?: boolean;
 }
 
 export interface LedgerBase {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateLedger, getBurden, getExpenseMemo, type Expense } from "../src/domain/ledger";
+import { calculateLedger, getBurden, getExpenseMemo, moveOldestToBase, type Expense } from "../src/domain/ledger";
 
 const split = (payer: "left" | "right", total: number): Expense => ({
   id: crypto.randomUUID(),
@@ -80,5 +80,18 @@ describe("支払いバランス", () => {
 
     expect(getExpenseMemo(expense, "left")).toBe("交通費");
     expect(getExpenseMemo(expense, "right")).toBe("");
+  });
+
+  it("11件目では最古の明細だけを累積値へ移す", () => {
+    const expenses = Array.from({ length: 11 }, (_, index) => ({
+      ...split(index % 2 === 0 ? "left" : "right", 101),
+      id: `expense-${index + 1}`,
+    }));
+
+    const compacted = moveOldestToBase({ leftNet: 0, lastOddExtra: null }, expenses);
+
+    expect(compacted.expenses).toHaveLength(10);
+    expect(compacted.expenses[0].id).toBe("expense-2");
+    expect(compacted.base).toEqual({ leftNet: 51, lastOddExtra: "right" });
   });
 });

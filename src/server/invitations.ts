@@ -101,17 +101,10 @@ export const createInvitation = async (request: Request, env: InvitationEnv) => 
   const token = randomToken();
   const invitationId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await env.DB.batch([
-    env.DB.prepare(`
-      UPDATE invitations
-      SET cancelled_at = CURRENT_TIMESTAMP
-      WHERE inviter_user_id = ? AND accepted_at IS NULL AND cancelled_at IS NULL
-    `).bind(authenticated.id),
-    env.DB.prepare(`
-      INSERT INTO invitations (id, inviter_user_id, invited_email, token_hash, expires_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).bind(invitationId, authenticated.id, email, await hashToken(token), expiresAt),
-  ]);
+  await env.DB.prepare(`
+    INSERT INTO invitations (id, inviter_user_id, invited_email, token_hash, expires_at)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(invitationId, authenticated.id, email, await hashToken(token), expiresAt).run();
 
   try {
     await sendInvitationEmail(env, {
@@ -123,6 +116,12 @@ export const createInvitation = async (request: Request, env: InvitationEnv) => 
     await env.DB.prepare("DELETE FROM invitations WHERE id = ?").bind(invitationId).run();
     return jsonError(error instanceof Error ? error.message : "招待メールを送信できませんでした。", 503);
   }
+
+  await env.DB.prepare(`
+    UPDATE invitations
+    SET cancelled_at = CURRENT_TIMESTAMP
+    WHERE inviter_user_id = ? AND id <> ? AND accepted_at IS NULL AND cancelled_at IS NULL
+  `).bind(authenticated.id, invitationId).run();
 
   return Response.json({ invitation: { id: invitationId, invitedEmail: email, expiresAt } }, { status: 201 });
 };

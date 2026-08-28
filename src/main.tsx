@@ -34,6 +34,11 @@ type PairState = {
 };
 
 type InvitationDetails = { inviterName: string; expiresAt: string };
+type SharedLedger = {
+  pair: NonNullable<PairState["pair"]>;
+  base: LedgerBase;
+  expenses: Expense[];
+};
 
 const initialState: AppState = {
   base: { leftNet: 0, lastOddExtra: null },
@@ -70,6 +75,7 @@ function App() {
   const [revealedExpenseId, setRevealedExpenseId] = useState<string | null>(null);
   const touchStart = useRef<{ id: string; x: number } | null>(null);
   const suppressedClickId = useRef<string | null>(null);
+  const syncingExpenses = useRef(false);
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
   const [authenticatedUser, setAuthenticatedUser] = useState<CurrentUser | null>(null);
@@ -117,9 +123,73 @@ function App() {
     })
     .catch((error) => setMessage(error instanceof Error ? error.message : "ペア情報を取得できませんでした。"));
 
+  const applySharedLedger = (ledgerState: SharedLedger) => {
+    setAppState((current) => {
+      const serverIds = new Set(ledgerState.expenses.map((expense) => expense.id));
+      const pending = current.expenses.filter((expense) => expense.pending && !serverIds.has(expense.id));
+      return {
+        ...current,
+        base: ledgerState.base,
+        expenses: [...ledgerState.expenses, ...pending],
+        names: {
+          left: ledgerState.pair.left.displayName,
+          right: ledgerState.pair.right.displayName,
+        },
+      };
+    });
+  };
+
+  const refreshSharedLedger = async () => {
+    const response = await fetch("/api/ledger");
+    const data = await response.json<SharedLedger & { error?: string }>();
+    if (!response.ok) throw new Error(data.error ?? "共有データを取得できませんでした。");
+    applySharedLedger(data);
+  };
+
+  const synchronizeExpenses = async (expenses: Expense[]) => {
+    if (!pairState?.pair || syncingExpenses.current || !navigator.onLine || expenses.length === 0) return;
+    syncingExpenses.current = true;
+    try {
+      for (const expense of expenses) {
+        const response = await fetch("/api/expenses", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...expense, pending: undefined, version: undefined }),
+        });
+        if (!response.ok) {
+          const data = await response.json<{ error?: string }>();
+          throw new Error(data.error ?? "支出を同期できませんでした。");
+        }
+      }
+      await refreshSharedLedger();
+      setMessage("同期しました。");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "支出を同期できませんでした。");
+    } finally {
+      syncingExpenses.current = false;
+    }
+  };
+
   useEffect(() => {
     if (authenticatedUser) void loadPairState();
   }, [authenticatedUser]);
+
+  useEffect(() => {
+    if (!pairState?.pair) return;
+    const pending = loadState().expenses.filter((expense) => expense.pending);
+    if (pending.length > 0 && navigator.onLine) {
+      void synchronizeExpenses(pending);
+    } else {
+      void refreshSharedLedger().catch((error) => setMessage(error instanceof Error ? error.message : "共有データを取得できませんでした。"));
+    }
+
+    const retry = () => {
+      const queued = loadState().expenses.filter((expense) => expense.pending);
+      void synchronizeExpenses(queued);
+    };
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, [pairState?.pair?.id]);
 
   useEffect(() => {
     if (!invitationToken) return;
@@ -152,6 +222,7 @@ function App() {
 
   const addExpense = (event: React.FormEvent) => {
     event.preventDefault();
+    const savedExpense = editingId ? appState.expenses.find((item) => item.id === editingId) : undefined;
     const expense: Expense = {
       id: editingId ?? crypto.randomUUID(),
       payer,
@@ -161,6 +232,8 @@ function App() {
       memo: mode === "split" ? memo.trim() : "",
       leftMemo: mode === "individual" ? leftMemo.trim() : undefined,
       rightMemo: mode === "individual" ? rightMemo.trim() : undefined,
+      version: savedExpense?.version,
+      pending: pairState?.pair ? savedExpense?.pending ?? !editingId : undefined,
     };
 
     if (!isValidExpense(expense)) {
@@ -172,6 +245,7 @@ function App() {
       const added = editingId
         ? current.expenses.map((saved) => saved.id === editingId ? expense : saved)
         : [...current.expenses, expense];
+      if (pairState?.pair) return { ...current, expenses: added };
       const trimmed = moveOldestToBase(current.base, added);
       return { ...current, ...trimmed };
     });
@@ -181,10 +255,35 @@ function App() {
     setLeftMemo("");
     setRightMemo("");
     setEditingId(null);
-    setMessage(editingId ? "記録を更新しました。" : "支払いを記録しました。");
+    if (pairState?.pair) {
+      if (savedExpense?.version && !savedExpense.pending) {
+        void fetch(`/api/expenses/${encodeURIComponent(expense.id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...expense, pending: undefined }),
+        }).then(async (response) => {
+          const data = await response.json<SharedLedger & { error?: string }>();
+          if (!response.ok) throw new Error(data.error ?? "記録を更新できませんでした。");
+          applySharedLedger(data);
+          setMessage("記録を更新しました。");
+        }).catch((error) => {
+          void refreshSharedLedger().catch(() => undefined);
+          setMessage(error instanceof Error ? error.message : "記録を更新できませんでした。");
+        });
+      } else {
+        setMessage(navigator.onLine ? "支払いを記録しました。" : "同期待ちとして保存しました。");
+        void synchronizeExpenses([expense]);
+      }
+    } else {
+      setMessage(editingId ? "記録を更新しました。" : "支払いを記録しました。");
+    }
   };
 
   const editExpense = (expense: Expense) => {
+    if (pairState?.pair && !expense.pending && !navigator.onLine) {
+      setMessage("オフラインでは同期済みの記録を編集できません。");
+      return;
+    }
     setEditingId(expense.id);
     setPayer(expense.payer);
     setMode(expense.mode);
@@ -198,6 +297,23 @@ function App() {
   };
 
   const deleteExpense = (id: string) => {
+    const expense = appState.expenses.find((item) => item.id === id);
+    if (pairState?.pair && expense && !expense.pending) {
+      if (!navigator.onLine) {
+        setMessage("オフラインでは同期済みの記録を削除できません。");
+        return;
+      }
+      void fetch(`/api/expenses/${encodeURIComponent(id)}?version=${expense.version ?? 0}`, { method: "DELETE" })
+        .then(async (response) => {
+          const data = await response.json<SharedLedger & { error?: string }>();
+          if (!response.ok) throw new Error(data.error ?? "記録を削除できませんでした。");
+          applySharedLedger(data);
+          setMessage("記録を削除しました。");
+        })
+        .catch((error) => setMessage(error instanceof Error ? error.message : "記録を削除できませんでした。"));
+      setRevealedExpenseId(null);
+      return;
+    }
     setAppState((current) => ({
       ...current,
       expenses: current.expenses.filter((expense) => expense.id !== id),
@@ -479,7 +595,7 @@ function App() {
         ) : (
           <ul className="history-grid">
             {historyRows.map(({ expense, burden }) => (
-              <li className="history-row" key={expense.id}>
+              <li className={`history-row ${expense.pending ? "is-pending" : ""}`} key={expense.id}>
                 <button className="swipe-delete" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
                 <div
                   className={`history-row-content ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
@@ -523,6 +639,7 @@ function App() {
                     );
                   })}
                 </div>
+                {expense.pending && <span className="pending-label">同期待ち</span>}
               </li>
             ))}
             {Array.from({ length: Math.max(0, 10 - historyRows.length) }, (_, index) => (
