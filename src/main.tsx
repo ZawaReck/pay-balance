@@ -124,6 +124,7 @@ function App() {
         </header>
         <section className="settings-section">
           <h1>表示名</h1>
+          {!authenticatedUser && <a className="settings-login" href="/api/auth/google">Googleでログイン</a>}
           {(["left", "right"] as const).map((participant) => (
             <label className="settings-field" key={participant}>
               <span>{participant === "left" ? "左側の人" : "右側の人"}</span>
@@ -159,10 +160,7 @@ function App() {
     <main className="app-shell">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="PayBalance ホーム">PayBalance</a>
-        <div className="header-actions">
-          {authenticatedUser ? <span className="signed-in-name">{authenticatedUser}</span> : <a className="login-button" href="/api/auth/google">Googleでログイン</a>}
-          <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
-        </div>
+        <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">設定</button>
       </header>
 
       <section className="balance-panel" aria-label="現在の支払いバランス">
