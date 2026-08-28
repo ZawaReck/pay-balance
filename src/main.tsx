@@ -282,12 +282,11 @@ function App() {
             <div className="individual-memos">
               {displayedParticipants.map((participant) => (
                 <label className="individual-memo" key={participant}>
-                  <span>メモ（任意）</span>
                   <input
                     aria-label={`${participantNames[participant]}のメモ`}
                     maxLength={48}
                     onChange={(event) => participant === "left" ? setLeftMemo(event.target.value) : setRightMemo(event.target.value)}
-                    placeholder=""
+                    placeholder="メモ（任意）"
                     value={participant === "left" ? leftMemo : rightMemo}
                   />
                 </label>
