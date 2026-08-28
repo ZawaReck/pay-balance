@@ -15,6 +15,9 @@
       "database_id": "1880298f-755c-4ced-ad4f-438c4ae06962"
     }
   ],
+  "vars": {
+    "APP_ORIGIN": "https://pay-balance.ozw1504.workers.dev"
+  },
   "observability": {
     "enabled": true
   }

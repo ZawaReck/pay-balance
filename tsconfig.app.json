@@ -17,5 +17,5 @@
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src"]
+  "include": ["src", "worker-configuration.d.ts"]
 }
