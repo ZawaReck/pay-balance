@@ -5,7 +5,7 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
-.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: env(safe-area-inset-top, 0); }
+.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: calc(env(safe-area-inset-top, 0px) + 8px); }
 .topbar { align-items: center; display: flex; height: 116px; justify-content: space-between; padding: 0 20px; }
 .brand { color: #006428; font-size: 20px; font-weight: 900; letter-spacing: -.65px; text-decoration: none; }
 .settings-button { background: transparent; border: 0; color: #006428; font-size: 16px; font-weight: 900; letter-spacing: 1px; opacity: .52; padding: 8px 0 8px 8px; }
