@@ -257,8 +257,9 @@ function App() {
           </div>
         </div>
 
-        {mode === "individual" ? (
-          <>
+        <div className="entry-details">
+          {mode === "individual" ? (
+            <>
             <div className="amount-grid">
               {displayedParticipants.map((participant) => (
                 <label className="amount-field" key={participant}>
@@ -292,31 +293,31 @@ function App() {
                 </label>
               ))}
             </div>
-          </>
-        ) : (
-          <label className="total-field">
-            <span>合計金額</span>
-            <div>
-              <input
-                aria-label="合計金額"
-                inputMode="numeric"
-                min="1"
-                onChange={(event) => { setLeftAmount(event.target.value); setRightAmount(""); }}
-                pattern="[0-9]*"
-                placeholder="0"
-                type="number"
-                value={leftAmount}
-              />
-              <small>円</small>
-            </div>
-          </label>
-        )}
-
-        {mode === "split" && (
-          <label className="memo-field">
-            <input aria-label="メモ（任意）" maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="メモ（任意）" value={memo} />
-          </label>
-        )}
+            </>
+          ) : (
+            <>
+              <label className="total-field">
+                <span>合計金額</span>
+                <div>
+                  <input
+                    aria-label="合計金額"
+                    inputMode="numeric"
+                    min="1"
+                    onChange={(event) => { setLeftAmount(event.target.value); setRightAmount(""); }}
+                    pattern="[0-9]*"
+                    placeholder="0"
+                    type="number"
+                    value={leftAmount}
+                  />
+                  <small>円</small>
+                </div>
+              </label>
+              <label className="memo-field">
+                <input aria-label="メモ（任意）" maxLength={48} onChange={(event) => setMemo(event.target.value)} placeholder="メモ（任意）" value={memo} />
+              </label>
+            </>
+          )}
+        </div>
         <button className="save-button" type="submit">記録</button>
         {message && <p className="form-message" role="status">{message}</p>}
       </form>
