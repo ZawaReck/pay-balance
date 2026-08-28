@@ -29,4 +29,6 @@ npm run deploy
 
 ## データベース
 
-共有機能は Cloudflare D1 を前提とし、初期スキーマを `migrations/0001_initial.sql` に用意しています。D1 データベースを作成した後、`wrangler.jsonc` に `DB` バインディングを追加してマイグレーションを適用します。Google OAuth のクライアント情報と招待メールの送信サービスも、本番化時にシークレットとして設定します。
+共有機能は Cloudflare D1 を前提とし、初期スキーマを `migrations/0001_initial.sql` に用意しています。D1 データベースを作成した後、`wrangler.jsonc` に `DB` バインディングを追加してマイグレーションを適用します。
+
+招待メールは Resend を使用します。Cloudflareの本番シークレットに、送信専用の `RESEND_API_KEY` と、検証済みドメインの差出人を含む `INVITATION_FROM`（例：`PayBalance <invite@example.com>`）を設定します。Resend は Cloudflare Workers からの送信と、送信専用APIキーをサポートしています。[ResendのCloudflare Workersガイド](https://resend.com/docs/send-with-cloudflare-workers)
