@@ -1,5 +1,11 @@
 import { beginGoogleLogin, completeGoogleLogin, getCurrentUser, updateCurrentUser } from "./server/auth";
 import {
+  approveDestructiveRequest,
+  cancelDestructiveRequest,
+  createDestructiveRequest,
+  getDestructiveRequest,
+} from "./server/destructive-requests";
+import {
   acceptInvitation,
   cancelInvitation,
   createInvitation,
@@ -30,6 +36,12 @@ export default {
     if (url.pathname === "/api/me" && request.method === "GET") return getCurrentUser(request, env);
     if (url.pathname === "/api/pair" && request.method === "GET") return getPairState(request, env);
     if (url.pathname === "/api/invitations" && request.method === "POST") return createInvitation(request, env);
+    if (url.pathname === "/api/destructive-requests" && request.method === "GET") {
+      return getDestructiveRequest(request, env);
+    }
+    if (url.pathname === "/api/destructive-requests" && request.method === "POST") {
+      return createDestructiveRequest(request, env);
+    }
     if (url.pathname === "/api/ledger" && request.method === "GET") return getSharedLedger(request, env);
     if (url.pathname === "/api/expenses" && request.method === "POST") return createSharedExpense(request, env);
 
@@ -46,6 +58,15 @@ export default {
       if (request.method === "GET") return getInvitation(env, invitationIdOrToken);
       if (request.method === "POST") return acceptInvitation(request, env, invitationIdOrToken);
       if (request.method === "DELETE") return cancelInvitation(request, env, invitationIdOrToken);
+    }
+
+    const approvalMatch = url.pathname.match(/^\/api\/destructive-requests\/([^/]+)\/approve$/);
+    if (approvalMatch && request.method === "POST") {
+      return approveDestructiveRequest(request, env, decodeURIComponent(approvalMatch[1]));
+    }
+    const destructiveRequestMatch = url.pathname.match(/^\/api\/destructive-requests\/([^/]+)$/);
+    if (destructiveRequestMatch && request.method === "DELETE") {
+      return cancelDestructiveRequest(request, env, decodeURIComponent(destructiveRequestMatch[1]));
     }
 
     return env.ASSETS.fetch(request);

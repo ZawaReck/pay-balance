@@ -34,6 +34,14 @@ type PairState = {
 };
 
 type InvitationDetails = { inviterName: string; expiresAt: string };
+type DestructiveKind = "settle" | "dissolve_pair" | "delete_account";
+type DestructiveRequest = {
+  id: string;
+  kind: DestructiveKind;
+  requestedBy: CurrentUser;
+  expiresAt: string;
+  isRequester: boolean;
+};
 type SharedLedger = {
   pair: NonNullable<PairState["pair"]>;
   base: LedgerBase;
@@ -61,6 +69,11 @@ const loadState = (): AppState => {
 };
 
 const formatYen = (amount: number) => `${amount.toLocaleString("ja-JP")}円`;
+const destructiveLabels: Record<DestructiveKind, string> = {
+  settle: "精算リセット",
+  dissolve_pair: "ペア解消",
+  delete_account: "アカウント削除",
+};
 
 function App() {
   const [appState, setAppState] = useState<AppState>(loadState);
@@ -85,6 +98,7 @@ function App() {
   const [inviteEmail, setInviteEmail] = useState("");
   const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
   const [invitationError, setInvitationError] = useState("");
+  const [destructiveRequest, setDestructiveRequest] = useState<DestructiveRequest | null>(null);
   const invitationToken = location.pathname.match(/^\/invitations\/([^/]+)$/)?.[1] ?? null;
 
   const ledger = useMemo(
@@ -126,6 +140,14 @@ function App() {
       }
     })
     .catch((error) => setMessage(error instanceof Error ? error.message : "ペア情報を取得できませんでした。"));
+
+  const loadDestructiveRequest = () => fetch("/api/destructive-requests")
+    .then(async (response) => {
+      if (!response.ok) throw new Error((await response.json<{ error?: string }>()).error ?? "申請情報を取得できませんでした。");
+      return response.json<{ request: DestructiveRequest | null }>();
+    })
+    .then((data) => setDestructiveRequest(data.request))
+    .catch(() => setDestructiveRequest(null));
 
   const applySharedLedger = (ledgerState: SharedLedger) => {
     setAppState((current) => {
@@ -193,6 +215,11 @@ function App() {
     };
     window.addEventListener("online", retry);
     return () => window.removeEventListener("online", retry);
+  }, [pairState?.pair?.id]);
+
+  useEffect(() => {
+    if (pairState?.pair) void loadDestructiveRequest();
+    else setDestructiveRequest(null);
   }, [pairState?.pair?.id]);
 
   useEffect(() => {
@@ -404,6 +431,52 @@ function App() {
     setMessage("表示名を更新しました。");
   };
 
+  const submitDestructiveRequest = async (kind: DestructiveKind) => {
+    const response = await fetch("/api/destructive-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ kind }),
+    });
+    const data = await response.json<{ request?: DestructiveRequest; error?: string }>();
+    if (!response.ok || !data.request) {
+      setMessage(data.error ?? "申請できませんでした。");
+      return;
+    }
+    setDestructiveRequest(data.request);
+    setMessage(`${destructiveLabels[kind]}を申請しました。`);
+  };
+
+  const cancelPendingRequest = async () => {
+    if (!destructiveRequest) return;
+    const response = await fetch(`/api/destructive-requests/${encodeURIComponent(destructiveRequest.id)}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      const data = await response.json<{ error?: string }>();
+      setMessage(data.error ?? "申請を取り消せませんでした。");
+      return;
+    }
+    setDestructiveRequest(null);
+    setMessage("申請を取り消しました。");
+  };
+
+  const approvePendingRequest = async () => {
+    if (!destructiveRequest) return;
+    const approvedKind = destructiveRequest.kind;
+    const response = await fetch(`/api/destructive-requests/${encodeURIComponent(destructiveRequest.id)}/approve`, {
+      method: "POST",
+    });
+    if (!response.ok) {
+      const data = await response.json<{ error?: string }>();
+      setMessage(data.error ?? "申請を承認できませんでした。");
+      return;
+    }
+    setDestructiveRequest(null);
+    setAppState((current) => ({ ...current, base: { leftNet: 0, lastOddExtra: null }, expenses: [] }));
+    await loadPairState();
+    setMessage(`${destructiveLabels[approvedKind]}を実行しました。`);
+  };
+
   const joinPair = async () => {
     if (!invitationToken) return;
     const response = await fetch(`/api/invitations/${encodeURIComponent(invitationToken)}`, { method: "POST" });
@@ -552,12 +625,32 @@ function App() {
             )}
           </section>
         )}
-        <section className="settings-section destructive-section">
-          <h1>精算・ペア</h1>
-          <p>精算リセット、ペア解消、アカウント削除は、相手の承認が必要です。</p>
-          <button className="outline-button" type="button">精算リセットを申請</button>
-          <button className="danger-button" type="button">ペア解消を申請</button>
-        </section>
+        {authenticatedUser && pairState?.pair && (
+          <section className="settings-section destructive-section">
+            <h1>精算・ペア</h1>
+            <p>精算リセット、ペア解消、アカウント削除は、相手の承認が必要です。</p>
+            {destructiveRequest ? (
+              <div className="pending-request">
+                <p>
+                  {destructiveRequest.isRequester
+                    ? `${destructiveLabels[destructiveRequest.kind]}を申請中です。相手の承認を待っています。`
+                    : `${destructiveRequest.requestedBy.displayName}さんが${destructiveLabels[destructiveRequest.kind]}を申請しています。`}
+                </p>
+                {destructiveRequest.isRequester ? (
+                  <button className="outline-button" onClick={() => void cancelPendingRequest()} type="button">申請を取り消す</button>
+                ) : (
+                  <button className="danger-button" onClick={() => void approvePendingRequest()} type="button">承認して実行</button>
+                )}
+              </div>
+            ) : (
+              <>
+                <button className="outline-button" onClick={() => void submitDestructiveRequest("settle")} type="button">精算リセットを申請</button>
+                <button className="danger-button" onClick={() => void submitDestructiveRequest("dissolve_pair")} type="button">ペア解消を申請</button>
+                <button className="danger-button" onClick={() => void submitDestructiveRequest("delete_account")} type="button">アカウント削除を申請</button>
+              </>
+            )}
+          </section>
+        )}
         {message && <p className="form-message" role="status">{message}</p>}
       </main>
     );
