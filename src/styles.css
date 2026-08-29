@@ -21,6 +21,7 @@ button { cursor: pointer; }
 .difference-copy p { grid-column: 1; grid-row: 2; text-align: right; }
 .difference-copy strong { grid-column: 2; grid-row: 2; padding-right: 28px; position: relative; }
 .difference-copy strong small { bottom: 4px; font-size: 12px; letter-spacing: 0; line-height: 1; position: absolute; right: 8px; }
+.difference-copy strong span { transition: font-size .12s ease; }
 
 .entry-form { padding: 41px 20px 0; }
 .entry-form::after { clear: both; content: ""; display: block; }
@@ -43,6 +44,7 @@ button { cursor: pointer; }
 .amount-field > span { font-size: 20px; font-weight: 500; white-space: nowrap; }
 .amount-field > div, .total-field > div { align-items: baseline; background: #d7e3db; border-radius: 5px; display: flex; gap: 3px; min-width: 0; padding: 0 6px; }
 .amount-field input, .total-field input { background: transparent; border: 0; color: #006428; font-size: 20px; font-weight: 700; height: 27px; min-width: 0; outline: 0; padding: 0; text-align: right; width: 100%; }
+.amount-field input, .total-field input, .history-cell strong { transition: font-size .12s ease; }
 .amount-field > div { flex: 1; }
 .amount-field small, .total-field small { font-size: 10px; font-weight: 700; }
 .total-field { background: #d7e3db; border-radius: 5px; display: block; height: 27px; padding: 0; position: relative; }

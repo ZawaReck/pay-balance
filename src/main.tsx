@@ -12,6 +12,7 @@ import {
   type LedgerBase,
   type Participant,
 } from "./domain/ledger";
+import { numericFontSize } from "./domain/formatting";
 import { anonymousLedgerStorageKey, ledgerStorageKeyFor } from "./storage/ledger-storage";
 import "./styles.css";
 
@@ -769,7 +770,7 @@ function App() {
         </div>
         <div className="difference-copy">
           <p>差分</p>
-          <strong><span>{ledger.difference.toLocaleString("ja-JP")}</span><small>円</small></strong>
+          <strong><span style={{ fontSize: numericFontSize(ledger.difference, 28, 16) }}>{ledger.difference.toLocaleString("ja-JP")}</span><small>円</small></strong>
         </div>
       </section>
 
@@ -818,6 +819,7 @@ function App() {
                       onChange={(event) => participant === "left" ? setLeftAmount(event.target.value) : setRightAmount(event.target.value)}
                       pattern="[0-9]*"
                       placeholder="0"
+                      style={{ fontSize: numericFontSize(participant === "left" ? leftAmount : rightAmount, 20, 13) }}
                       type="number"
                       value={participant === "left" ? leftAmount : rightAmount}
                     />
@@ -852,6 +854,7 @@ function App() {
                     onChange={(event) => { setLeftAmount(event.target.value); setRightAmount(""); }}
                     pattern="[0-9]*"
                     placeholder="0"
+                    style={{ fontSize: numericFontSize(leftAmount, 20, 13) }}
                     type="number"
                     value={leftAmount}
                   />
@@ -914,7 +917,7 @@ function App() {
                     return (
                       <div className={`history-cell person-${participant}`} key={participant}>
                         <span>{cellMemo}</span>
-                        <strong>{formatYen(burden[participant])}</strong>
+                        <strong style={{ fontSize: numericFontSize(burden[participant], 16, 11) }}>{formatYen(burden[participant])}</strong>
                       </div>
                     );
                   })}
