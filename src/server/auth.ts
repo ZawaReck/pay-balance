@@ -28,6 +28,11 @@ const cookie = (name: string, value: string, maxAge: number) =>
 
 const jsonError = (message: string, status = 400) => Response.json({ error: message }, { status });
 
+export const normalizeDisplayName = (value: unknown) =>
+  typeof value === "string" ? value.trim() : "";
+
+export const isDisplayName = (value: string) => value.length > 0 && Array.from(value).length <= 24;
+
 const callbackUrl = (env: AuthEnv) => `${env.APP_ORIGIN}/api/auth/google/callback`;
 
 export const beginGoogleLogin = async (request: Request, env: AuthEnv) => {
@@ -97,7 +102,7 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
   await env.DB.prepare(`
     INSERT INTO users (id, google_subject, email, display_name)
     VALUES (?, ?, ?, ?)
-    ON CONFLICT(google_subject) DO UPDATE SET email = excluded.email, display_name = excluded.display_name, updated_at = CURRENT_TIMESTAMP
+    ON CONFLICT(google_subject) DO UPDATE SET email = excluded.email, updated_at = CURRENT_TIMESTAMP
   `).bind(userId, profile.sub, profile.email, profile.name || profile.email).run();
   const user = await env.DB.prepare("SELECT id, email, display_name FROM users WHERE google_subject = ?").bind(profile.sub).first<{ id: string; email: string; display_name: string }>();
   if (!user) return jsonError("利用者情報を保存できませんでした。", 500);
@@ -119,6 +124,19 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
 export const getCurrentUser = async (request: Request, env: AuthEnv) => {
   const user = await getAuthenticatedUser(request, env);
   return Response.json({ user: user ? { id: user.id, displayName: user.displayName } : null });
+};
+
+export const updateCurrentUser = async (request: Request, env: AuthEnv) => {
+  const user = await getAuthenticatedUser(request, env);
+  if (!user) return jsonError("Googleログインが必要です。", 401);
+  const body = await request.json<{ displayName?: unknown }>().catch(() => null);
+  const displayName = normalizeDisplayName(body?.displayName);
+  if (!isDisplayName(displayName)) return jsonError("表示名は1〜24文字で入力してください。");
+
+  await env.DB.prepare(`
+    UPDATE users SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+  `).bind(displayName, user.id).run();
+  return Response.json({ user: { id: user.id, displayName } });
 };
 
 export type AuthenticatedUser = {

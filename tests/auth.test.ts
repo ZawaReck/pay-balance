@@ -1,0 +1,19 @@
+import { describe, expect, it } from "vitest";
+import { isDisplayName, normalizeDisplayName } from "../src/server/auth";
+
+describe("表示名", () => {
+  it("前後の空白を除いて保存する", () => {
+    expect(normalizeDisplayName("  はなこ  ")).toBe("はなこ");
+  });
+
+  it("1〜24文字だけを受け付ける", () => {
+    expect(isDisplayName("はなこ")).toBe(true);
+    expect(isDisplayName("")).toBe(false);
+    expect(isDisplayName("あ".repeat(25))).toBe(false);
+  });
+
+  it("絵文字を1文字として数える", () => {
+    expect(isDisplayName("🌷".repeat(24))).toBe(true);
+    expect(isDisplayName("🌷".repeat(25))).toBe(false);
+  });
+});

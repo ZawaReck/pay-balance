@@ -79,6 +79,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
   const [authenticatedUser, setAuthenticatedUser] = useState<CurrentUser | null>(null);
+  const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [authLoaded, setAuthLoaded] = useState(false);
   const [pairState, setPairState] = useState<PairState | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
@@ -102,7 +103,10 @@ function App() {
   useEffect(() => {
     fetch("/api/me")
       .then((response) => response.ok ? response.json() as Promise<{ user?: CurrentUser }> : null)
-      .then((data: { user?: CurrentUser } | null) => setAuthenticatedUser(data?.user ?? null))
+      .then((data: { user?: CurrentUser } | null) => {
+        setAuthenticatedUser(data?.user ?? null);
+        setDisplayNameDraft(data?.user?.displayName ?? "");
+      })
       .catch(() => setAuthenticatedUser(null))
       .finally(() => setAuthLoaded(true));
   }, []);
@@ -377,6 +381,29 @@ function App() {
     await loadPairState();
   };
 
+  const saveDisplayName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const response = await fetch("/api/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: displayNameDraft }),
+    });
+    const data = await response.json<{ user?: CurrentUser; error?: string }>();
+    if (!response.ok || !data.user) {
+      setMessage(data.error ?? "表示名を更新できませんでした。");
+      return;
+    }
+    setAuthenticatedUser(data.user);
+    setDisplayNameDraft(data.user.displayName);
+    setAppState((current) => {
+      if (!pairState?.pair) return current;
+      const participant = pairState.pair.left.id === data.user!.id ? "left" : "right";
+      return { ...current, names: { ...current.names, [participant]: data.user!.displayName } };
+    });
+    await loadPairState();
+    setMessage("表示名を更新しました。");
+  };
+
   const joinPair = async () => {
     if (!invitationToken) return;
     const response = await fetch(`/api/invitations/${encodeURIComponent(invitationToken)}`, { method: "POST" });
@@ -437,20 +464,37 @@ function App() {
         </header>
         <section className="settings-section">
           <h1>表示名</h1>
-          {!authenticatedUser && <a className="settings-login" href="/api/auth/google">Googleでログイン</a>}
-          {(["left", "right"] as const).map((participant) => (
-            <label className="settings-field" key={participant}>
-              <span>{participant === "left" ? "左側の人" : "右側の人"}</span>
-              <input
-                maxLength={24}
-                onChange={(event) => setAppState((current) => ({
-                  ...current,
-                  names: { ...current.names, [participant]: event.target.value },
-                }))}
-                value={participantNames[participant]}
-              />
-            </label>
-          ))}
+          {authenticatedUser ? (
+            <form className="display-name-form" onSubmit={(event) => void saveDisplayName(event)}>
+              <label className="settings-field">
+                <span>自分の表示名</span>
+                <input
+                  maxLength={24}
+                  onChange={(event) => setDisplayNameDraft(event.target.value)}
+                  required
+                  value={displayNameDraft}
+                />
+              </label>
+              <button className="primary-button" type="submit">更新</button>
+            </form>
+          ) : (
+            <>
+              <a className="settings-login" href="/api/auth/google">Googleでログイン</a>
+              {(["left", "right"] as const).map((participant) => (
+                <label className="settings-field" key={participant}>
+                  <span>{participant === "left" ? "左側の人" : "右側の人"}</span>
+                  <input
+                    maxLength={24}
+                    onChange={(event) => setAppState((current) => ({
+                      ...current,
+                      names: { ...current.names, [participant]: event.target.value },
+                    }))}
+                    value={participantNames[participant]}
+                  />
+                </label>
+              ))}
+            </>
+          )}
         </section>
         <section className="settings-section">
           <h1>表示順</h1>

@@ -1,4 +1,4 @@
-import { beginGoogleLogin, completeGoogleLogin, getCurrentUser } from "./server/auth";
+import { beginGoogleLogin, completeGoogleLogin, getCurrentUser, updateCurrentUser } from "./server/auth";
 import {
   acceptInvitation,
   cancelInvitation,
@@ -26,7 +26,8 @@ export default {
     }
     if (url.pathname === "/api/auth/google") return beginGoogleLogin(request, env);
     if (url.pathname === "/api/auth/google/callback") return completeGoogleLogin(request, env);
-    if (url.pathname === "/api/me") return getCurrentUser(request, env);
+    if (url.pathname === "/api/me" && request.method === "PATCH") return updateCurrentUser(request, env);
+    if (url.pathname === "/api/me" && request.method === "GET") return getCurrentUser(request, env);
     if (url.pathname === "/api/pair" && request.method === "GET") return getPairState(request, env);
     if (url.pathname === "/api/invitations" && request.method === "POST") return createInvitation(request, env);
     if (url.pathname === "/api/ledger" && request.method === "GET") return getSharedLedger(request, env);
