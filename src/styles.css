@@ -97,8 +97,10 @@ button { cursor: pointer; }
 .destructive-section { margin-top: 20px; }
 .invitation-form .primary-button { width: 100%; }
 .pending-invitation strong { overflow-wrap: anywhere; }
+.invitation-link { background: #d7e3db; border: 0; border-radius: 10px; color: #006428; display: block; font-size: 12px; margin-bottom: 10px; outline: 0; padding: 10px 12px; width: 100%; }
 .settings-actions { display: grid; gap: 8px; grid-template-columns: 1fr 1fr; }
-.settings-actions button { margin-top: 0; text-align: center; }
+.settings-actions + .settings-actions { margin-top: 8px; }
+.settings-actions button { margin-top: 0; text-align: center; width: 100%; }
 .invitation-page { overflow-y: auto; }
 .invitation-page .topbar { height: 104px; }
 .invitation-card { border-top: 1px solid rgb(0 100 40 / 32%); padding: 34px 24px; }

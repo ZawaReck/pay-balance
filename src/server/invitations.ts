@@ -1,7 +1,6 @@
 import { getAuthenticatedUser, hashToken, randomToken, type AuthEnv, type AuthenticatedUser } from "./auth";
-import { sendInvitationEmail, type EmailEnv } from "./invitation-email";
 
-export interface InvitationEnv extends AuthEnv, EmailEnv {}
+export interface InvitationEnv extends AuthEnv {}
 
 type PairRow = {
   id: string;
@@ -26,6 +25,9 @@ export const normalizeInvitationEmail = (value: unknown) =>
 
 export const isInvitationEmail = (value: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
+
+export const buildInvitationUrl = (origin: string, token: string) =>
+  `${origin.replace(/\/$/, "")}/invitations/${encodeURIComponent(token)}`;
 
 const requireUser = async (request: Request, env: InvitationEnv) => {
   const user = await getAuthenticatedUser(request, env);
@@ -62,7 +64,7 @@ export const getPairState = async (request: Request, env: InvitationEnv) => {
   }
 
   const invitation = await env.DB.prepare(`
-    SELECT id, invited_email, expires_at
+    SELECT id, invited_email, expires_at, share_token
     FROM invitations
     WHERE inviter_user_id = ?
       AND accepted_at IS NULL
@@ -70,7 +72,12 @@ export const getPairState = async (request: Request, env: InvitationEnv) => {
       AND datetime(expires_at) > CURRENT_TIMESTAMP
     ORDER BY created_at DESC
     LIMIT 1
-  `).bind(authenticated.id).first<{ id: string; invited_email: string; expires_at: string }>();
+  `).bind(authenticated.id).first<{
+    id: string;
+    invited_email: string;
+    expires_at: string;
+    share_token: string | null;
+  }>();
 
   return Response.json({
     pair: null,
@@ -78,6 +85,7 @@ export const getPairState = async (request: Request, env: InvitationEnv) => {
       id: invitation.id,
       invitedEmail: invitation.invited_email,
       expiresAt: invitation.expires_at,
+      invitationUrl: invitation.share_token ? buildInvitationUrl(env.APP_ORIGIN, invitation.share_token) : null,
     } : null,
   });
 };
@@ -101,29 +109,22 @@ export const createInvitation = async (request: Request, env: InvitationEnv) => 
   const token = randomToken();
   const invitationId = crypto.randomUUID();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-  await env.DB.prepare(`
-    INSERT INTO invitations (id, inviter_user_id, invited_email, token_hash, expires_at)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(invitationId, authenticated.id, email, await hashToken(token), expiresAt).run();
+  const invitationUrl = buildInvitationUrl(env.APP_ORIGIN, token);
+  await env.DB.batch([
+    env.DB.prepare(`
+      UPDATE invitations
+      SET cancelled_at = CURRENT_TIMESTAMP
+      WHERE inviter_user_id = ? AND accepted_at IS NULL AND cancelled_at IS NULL
+    `).bind(authenticated.id),
+    env.DB.prepare(`
+      INSERT INTO invitations (id, inviter_user_id, invited_email, token_hash, share_token, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(invitationId, authenticated.id, email, await hashToken(token), token, expiresAt),
+  ]);
 
-  try {
-    await sendInvitationEmail(env, {
-      to: email,
-      invitationUrl: `${env.APP_ORIGIN}/invitations/${token}`,
-      inviterName: authenticated.displayName,
-    });
-  } catch (error) {
-    await env.DB.prepare("DELETE FROM invitations WHERE id = ?").bind(invitationId).run();
-    return jsonError(error instanceof Error ? error.message : "招待メールを送信できませんでした。", 503);
-  }
-
-  await env.DB.prepare(`
-    UPDATE invitations
-    SET cancelled_at = CURRENT_TIMESTAMP
-    WHERE inviter_user_id = ? AND id <> ? AND accepted_at IS NULL AND cancelled_at IS NULL
-  `).bind(authenticated.id, invitationId).run();
-
-  return Response.json({ invitation: { id: invitationId, invitedEmail: email, expiresAt } }, { status: 201 });
+  return Response.json({
+    invitation: { id: invitationId, invitedEmail: email, expiresAt, invitationUrl },
+  }, { status: 201 });
 };
 
 const findInvitationByToken = async (env: InvitationEnv, token: string) => env.DB.prepare(`

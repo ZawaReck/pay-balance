@@ -1,11 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildInvitationUrl,
   canAcceptInvitation,
   isInvitationEmail,
   normalizeInvitationEmail,
 } from "../src/server/invitations";
 
 describe("ペア招待", () => {
+  it("手動共有用の招待リンクを組み立てる", () => {
+    expect(buildInvitationUrl("https://paybalance.example/", "token/value"))
+      .toBe("https://paybalance.example/invitations/token%2Fvalue");
+  });
+
   it("招待メールアドレスを正規化する", () => {
     expect(normalizeInvitationEmail("  Friend@Example.COM ")).toBe("friend@example.com");
     expect(isInvitationEmail("friend@example.com")).toBe(true);

@@ -30,7 +30,7 @@ type PairState = {
     left: CurrentUser;
     right: CurrentUser;
   } | null;
-  invitation: { id: string; invitedEmail: string; expiresAt: string } | null;
+  invitation: { id: string; invitedEmail: string; expiresAt: string; invitationUrl: string | null } | null;
 };
 
 type InvitationDetails = { inviterName: string; expiresAt: string };
@@ -329,14 +329,41 @@ function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email }),
     });
-    const data = await response.json<{ error?: string }>();
+    const data = await response.json<{ invitation?: PairState["invitation"]; error?: string }>();
     if (!response.ok) {
-      setMessage(data.error ?? "招待メールを送信できませんでした。");
+      setMessage(data.error ?? "招待リンクを作成できませんでした。");
       return;
     }
-    setMessage("招待メールを送信しました。");
+    setMessage("招待リンクを作成しました。");
     setInviteEmail("");
     await loadPairState();
+  };
+
+  const copyInvitation = async (invitationUrl: string) => {
+    try {
+      await navigator.clipboard.writeText(invitationUrl);
+      setMessage("招待リンクをコピーしました。");
+    } catch {
+      setMessage("コピーできませんでした。リンクを長押ししてコピーしてください。");
+    }
+  };
+
+  const shareInvitation = async (invitationUrl: string) => {
+    if (!navigator.share) {
+      await copyInvitation(invitationUrl);
+      return;
+    }
+    try {
+      await navigator.share({
+        title: "PayBalanceへの招待",
+        text: "PayBalanceのペア招待です。",
+        url: invitationUrl,
+      });
+    } catch (error) {
+      if (!(error instanceof DOMException) || error.name !== "AbortError") {
+        setMessage("共有できませんでした。リンクを長押ししてコピーしてください。");
+      }
+    }
   };
 
   const removeInvitation = async (invitationId: string) => {
@@ -441,8 +468,25 @@ function App() {
             ) : pairState.invitation ? (
               <div className="pending-invitation">
                 <p><strong>{pairState.invitation.invitedEmail}</strong> の受諾を待っています。</p>
+                {pairState.invitation.invitationUrl ? (
+                  <>
+                    <input
+                      aria-label="招待リンク"
+                      className="invitation-link"
+                      onFocus={(event) => event.currentTarget.select()}
+                      readOnly
+                      value={pairState.invitation.invitationUrl}
+                    />
+                    <div className="settings-actions">
+                      <button className="primary-button" onClick={() => void shareInvitation(pairState.invitation!.invitationUrl!)} type="button">リンクを共有</button>
+                      <button className="outline-button" onClick={() => void copyInvitation(pairState.invitation!.invitationUrl!)} type="button">コピー</button>
+                    </div>
+                  </>
+                ) : (
+                  <p>この招待はリンクを再表示できません。新しいリンクを発行してください。</p>
+                )}
                 <div className="settings-actions">
-                  <button className="outline-button" onClick={() => void submitInvitation(pairState.invitation!.invitedEmail)} type="button">招待を再送</button>
+                  <button className="outline-button" onClick={() => void submitInvitation(pairState.invitation!.invitedEmail)} type="button">リンクを再発行</button>
                   <button className="danger-button" onClick={() => void removeInvitation(pairState.invitation!.id)} type="button">招待を取り消す</button>
                 </div>
               </div>
@@ -459,7 +503,7 @@ function App() {
                     value={inviteEmail}
                   />
                 </label>
-                <button className="primary-button" type="submit">招待メールを送る</button>
+                <button className="primary-button" type="submit">招待リンクを作る</button>
               </form>
             )}
           </section>
