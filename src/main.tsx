@@ -755,8 +755,8 @@ function App() {
     );
   }
 
-  return (
-    <main className="app-shell">
+    return (
+      <main className="app-shell home-page">
       <header className="topbar">
         <a className="brand" href="#top" aria-label="PayBalance ホーム">PayBalance</a>
         <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">•••</button>
@@ -878,7 +878,7 @@ function App() {
               <li className={`history-row ${expense.pending ? "is-pending" : ""}`} key={expense.id}>
                 <button className="swipe-delete" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
                 <div
-                  className={`history-row-content payer-${displayedParticipants[0] === expense.payer ? "left" : "right"} ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
+                  className={`history-row-content ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
                   onClick={() => {
                     if (suppressedClickId.current === expense.id) {
                       suppressedClickId.current = null;
@@ -918,7 +918,6 @@ function App() {
                       </div>
                     );
                   })}
-                  <span className={`payer-badge payer-badge-${displayedParticipants[0] === expense.payer ? "left" : "right"}`}>払</span>
                 </div>
                 {expense.pending && (expense.syncError ? (
                   <button
