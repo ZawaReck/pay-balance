@@ -23,6 +23,7 @@ type AppState = {
 };
 
 type CurrentUser = { id: string; displayName: string };
+type SignedInUser = CurrentUser & { leftOnLeft: boolean };
 type PairState = {
   pair: {
     id: string;
@@ -30,6 +31,7 @@ type PairState = {
     right: CurrentUser;
   } | null;
   invitation: { id: string; invitedEmail: string; expiresAt: string; invitationUrl: string | null } | null;
+  leftOnLeft: boolean;
 };
 
 type InvitationDetails = { inviterName: string; expiresAt: string };
@@ -98,7 +100,7 @@ function App() {
   const syncingExpenses = useRef(false);
   const [message, setMessage] = useState("");
   const [view, setView] = useState<"home" | "settings">("home");
-  const [authenticatedUser, setAuthenticatedUser] = useState<CurrentUser | null>(null);
+  const [authenticatedUser, setAuthenticatedUser] = useState<SignedInUser | null>(null);
   const [displayNameDraft, setDisplayNameDraft] = useState("");
   const [authLoaded, setAuthLoaded] = useState(false);
   const [pairState, setPairState] = useState<PairState | null>(null);
@@ -106,6 +108,7 @@ function App() {
   const [invitationDetails, setInvitationDetails] = useState<InvitationDetails | null>(null);
   const [invitationError, setInvitationError] = useState("");
   const [destructiveRequest, setDestructiveRequest] = useState<DestructiveRequest | null>(null);
+  const [savingDisplayOrder, setSavingDisplayOrder] = useState(false);
   const invitationToken = location.pathname.match(/^\/invitations\/([^/]+)$/)?.[1] ?? null;
 
   const ledger = useMemo(
@@ -123,8 +126,8 @@ function App() {
 
   useEffect(() => {
     fetch("/api/me")
-      .then((response) => response.ok ? response.json() as Promise<{ user?: CurrentUser }> : null)
-      .then((data: { user?: CurrentUser } | null) => {
+      .then((response) => response.ok ? response.json() as Promise<{ user?: SignedInUser }> : null)
+      .then((data: { user?: SignedInUser } | null) => {
         setAuthenticatedUser(data?.user ?? null);
         setDisplayNameDraft(data?.user?.displayName ?? "");
       })
@@ -145,10 +148,11 @@ function App() {
       if (state.pair) {
         setAppState({
           ...scopedState,
+          leftOnLeft: state.leftOnLeft,
           names: { left: state.pair!.left.displayName, right: state.pair!.right.displayName },
         });
       } else {
-        setAppState(scopedState);
+        setAppState({ ...scopedState, leftOnLeft: state.leftOnLeft });
       }
     })
     .catch((error) => setMessage(error instanceof Error ? error.message : "ペア情報を取得できませんでした。"));
@@ -460,7 +464,7 @@ function App() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ displayName: displayNameDraft }),
     });
-    const data = await response.json<{ user?: CurrentUser; error?: string }>();
+    const data = await response.json<{ user?: SignedInUser; error?: string }>();
     if (!response.ok || !data.user) {
       setMessage(data.error ?? "表示名を更新できませんでした。");
       return;
@@ -474,6 +478,33 @@ function App() {
     });
     await loadPairState();
     setMessage("表示名を更新しました。");
+  };
+
+  const toggleDisplayOrder = async () => {
+    const previous = appState.leftOnLeft;
+    const next = !previous;
+    setAppState((current) => ({ ...current, leftOnLeft: next }));
+    if (!authenticatedUser) return;
+
+    setSavingDisplayOrder(true);
+    try {
+      const response = await fetch("/api/display-order", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leftOnLeft: next }),
+      });
+      const data = await response.json<{ leftOnLeft?: boolean; error?: string }>();
+      if (!response.ok || typeof data.leftOnLeft !== "boolean") {
+        throw new Error(data.error ?? "表示順を保存できませんでした。");
+      }
+      setAuthenticatedUser((current) => current ? { ...current, leftOnLeft: data.leftOnLeft! } : null);
+      setMessage("表示順を更新しました。");
+    } catch (error) {
+      setAppState((current) => ({ ...current, leftOnLeft: previous }));
+      setMessage(error instanceof Error ? error.message : "表示順を保存できませんでした。");
+    } finally {
+      setSavingDisplayOrder(false);
+    }
   };
 
   const submitDestructiveRequest = async (kind: DestructiveKind) => {
@@ -632,7 +663,7 @@ function App() {
         </section>
         <section className="settings-section">
           <h1>表示順</h1>
-          <button className="outline-button" onClick={() => setAppState((current) => ({ ...current, leftOnLeft: !current.leftOnLeft }))} type="button">
+          <button className="outline-button" disabled={savingDisplayOrder} onClick={() => void toggleDisplayOrder()} type="button">
             {appState.leftOnLeft ? `${participantNames.left} と ${participantNames.right} を入れ替える` : `${participantNames.right} と ${participantNames.left} を入れ替える`}
           </button>
         </section>

@@ -60,6 +60,7 @@ export const getPairState = async (request: Request, env: InvitationEnv) => {
         right: { id: pair.right_user_id, displayName: pair.right_display_name },
       },
       invitation: null,
+      leftOnLeft: !authenticated.displaySwapped,
     });
   }
 
@@ -81,6 +82,7 @@ export const getPairState = async (request: Request, env: InvitationEnv) => {
 
   return Response.json({
     pair: null,
+    leftOnLeft: !authenticated.displaySwapped,
     invitation: invitation ? {
       id: invitation.id,
       invitedEmail: invitation.invited_email,

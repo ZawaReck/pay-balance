@@ -35,6 +35,9 @@ export const isDisplayName = (value: string) => value.length > 0 && Array.from(v
 
 export const canDeleteAccountImmediately = (pairId: string | null) => pairId === null;
 
+export const parseLeftOnLeft = (value: unknown): boolean | null =>
+  typeof value === "boolean" ? value : null;
+
 const callbackUrl = (env: AuthEnv) => `${env.APP_ORIGIN}/api/auth/google/callback`;
 
 export const beginGoogleLogin = async (request: Request, env: AuthEnv) => {
@@ -106,7 +109,14 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
     VALUES (?, ?, ?, ?)
     ON CONFLICT(google_subject) DO UPDATE SET email = excluded.email, updated_at = CURRENT_TIMESTAMP
   `).bind(userId, profile.sub, profile.email, profile.name || profile.email).run();
-  const user = await env.DB.prepare("SELECT id, email, display_name FROM users WHERE google_subject = ?").bind(profile.sub).first<{ id: string; email: string; display_name: string }>();
+  const user = await env.DB.prepare(`
+    SELECT id, email, display_name, display_swapped FROM users WHERE google_subject = ?
+  `).bind(profile.sub).first<{
+    id: string;
+    email: string;
+    display_name: string;
+    display_swapped: number;
+  }>();
   if (!user) return jsonError("利用者情報を保存できませんでした。", 500);
 
   const sessionToken = randomToken();
@@ -125,7 +135,13 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
 
 export const getCurrentUser = async (request: Request, env: AuthEnv) => {
   const user = await getAuthenticatedUser(request, env);
-  return Response.json({ user: user ? { id: user.id, displayName: user.displayName } : null });
+  return Response.json({
+    user: user ? {
+      id: user.id,
+      displayName: user.displayName,
+      leftOnLeft: !user.displaySwapped,
+    } : null,
+  });
 };
 
 export const updateCurrentUser = async (request: Request, env: AuthEnv) => {
@@ -138,7 +154,22 @@ export const updateCurrentUser = async (request: Request, env: AuthEnv) => {
   await env.DB.prepare(`
     UPDATE users SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
   `).bind(displayName, user.id).run();
-  return Response.json({ user: { id: user.id, displayName } });
+  return Response.json({
+    user: { id: user.id, displayName, leftOnLeft: !user.displaySwapped },
+  });
+};
+
+export const updateDisplayOrder = async (request: Request, env: AuthEnv) => {
+  const user = await getAuthenticatedUser(request, env);
+  if (!user) return jsonError("Googleログインが必要です。", 401);
+  const body = await request.json<{ leftOnLeft?: unknown }>().catch(() => null);
+  const leftOnLeft = parseLeftOnLeft(body?.leftOnLeft);
+  if (leftOnLeft === null) return jsonError("表示順を確認してください。");
+
+  await env.DB.prepare(`
+    UPDATE users SET display_swapped = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
+  `).bind(leftOnLeft ? 0 : 1, user.id).run();
+  return Response.json({ leftOnLeft });
 };
 
 export const deleteCurrentUser = async (request: Request, env: AuthEnv) => {
@@ -162,6 +193,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   displayName: string;
+  displaySwapped: boolean;
 };
 
 export const getAuthenticatedUser = async (request: Request, env: AuthEnv): Promise<AuthenticatedUser | null> => {
@@ -169,9 +201,19 @@ export const getAuthenticatedUser = async (request: Request, env: AuthEnv): Prom
   if (!token) return null;
   const tokenHash = await hashToken(token);
   const user = await env.DB.prepare(`
-    SELECT users.id, users.email, users.display_name
+    SELECT users.id, users.email, users.display_name, users.display_swapped
     FROM sessions JOIN users ON users.id = sessions.user_id
     WHERE sessions.token_hash = ? AND sessions.expires_at > CURRENT_TIMESTAMP
-  `).bind(tokenHash).first<{ id: string; email: string; display_name: string }>();
-  return user ? { id: user.id, email: user.email, displayName: user.display_name } : null;
+  `).bind(tokenHash).first<{
+    id: string;
+    email: string;
+    display_name: string;
+    display_swapped: number;
+  }>();
+  return user ? {
+    id: user.id,
+    email: user.email,
+    displayName: user.display_name,
+    displaySwapped: user.display_swapped === 1,
+  } : null;
 };

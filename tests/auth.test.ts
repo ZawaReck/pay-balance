@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { canDeleteAccountImmediately, isDisplayName, normalizeDisplayName } from "../src/server/auth";
+import {
+  canDeleteAccountImmediately,
+  isDisplayName,
+  normalizeDisplayName,
+  parseLeftOnLeft,
+} from "../src/server/auth";
 
 describe("表示名", () => {
   it("前後の空白を除いて保存する", () => {
@@ -20,5 +25,11 @@ describe("表示名", () => {
   it("ペア未所属の場合だけ即時削除できる", () => {
     expect(canDeleteAccountImmediately(null)).toBe(true);
     expect(canDeleteAccountImmediately("pair-id")).toBe(false);
+  });
+
+  it("左右の表示順には真偽値だけを受け付ける", () => {
+    expect(parseLeftOnLeft(true)).toBe(true);
+    expect(parseLeftOnLeft(false)).toBe(false);
+    expect(parseLeftOnLeft("false")).toBeNull();
   });
 });

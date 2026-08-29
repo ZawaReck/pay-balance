@@ -3,6 +3,7 @@ import {
   completeGoogleLogin,
   deleteCurrentUser,
   getCurrentUser,
+  updateDisplayOrder,
   updateCurrentUser,
 } from "./server/auth";
 import {
@@ -41,6 +42,9 @@ export default {
     if (url.pathname === "/api/me" && request.method === "PATCH") return updateCurrentUser(request, env);
     if (url.pathname === "/api/me" && request.method === "DELETE") return deleteCurrentUser(request, env);
     if (url.pathname === "/api/me" && request.method === "GET") return getCurrentUser(request, env);
+    if (url.pathname === "/api/display-order" && request.method === "PATCH") {
+      return updateDisplayOrder(request, env);
+    }
     if (url.pathname === "/api/pair" && request.method === "GET") return getPairState(request, env);
     if (url.pathname === "/api/invitations" && request.method === "POST") return createInvitation(request, env);
     if (url.pathname === "/api/destructive-requests" && request.method === "GET") {
