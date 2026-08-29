@@ -847,7 +847,7 @@ function App() {
               <li className={`history-row ${expense.pending ? "is-pending" : ""}`} key={expense.id}>
                 <button className="swipe-delete" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
                 <div
-                  className={`history-row-content payer-${expense.payer} ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
+                  className={`history-row-content payer-${displayedParticipants[0] === expense.payer ? "left" : "right"} ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
                   onClick={() => {
                     if (suppressedClickId.current === expense.id) {
                       suppressedClickId.current = null;
@@ -878,7 +878,7 @@ function App() {
                   role="button"
                   tabIndex={0}
                 >
-                  {(["left", "right"] as const).map((participant) => {
+                  {displayedParticipants.map((participant) => {
                     const cellMemo = getExpenseMemo(expense, participant);
                     return (
                       <div className={`history-cell person-${participant}`} key={participant}>
@@ -887,7 +887,7 @@ function App() {
                       </div>
                     );
                   })}
-                  <span className={`payer-badge payer-badge-${expense.payer}`}>払</span>
+                  <span className={`payer-badge payer-badge-${displayedParticipants[0] === expense.payer ? "left" : "right"}`}>払</span>
                 </div>
                 {expense.pending && (expense.syncError ? (
                   <button
