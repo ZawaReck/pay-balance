@@ -70,12 +70,18 @@ button { cursor: pointer; }
 .history-row-content.is-revealed { transform: translateX(-68px); }
 .history-row.is-pending .history-row-content { opacity: .62; }
 .pending-label { background: #006428; border-radius: 8px; color: #f9fffb; font-size: 9px; left: 50%; padding: 1px 5px; position: absolute; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; z-index: 2; }
+.retry-sync { border: 0; }
 .history-cell { align-items: center; display: flex; gap: 8px; min-width: 0; padding: 0 16px; }
 .history-cell.person-left { background: #c6f1f0; }
 .history-cell.person-right { background: #c6ffdd; }
 .history-cell + .history-cell { border-left: 1px solid rgb(0 100 40 / 22%); }
 .history-cell span { font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .history-cell strong { font-size: 16px; font-weight: 400; margin-left: auto; white-space: nowrap; }
+.history-row-content.payer-left .history-cell.person-left { padding-left: 37px; }
+.history-row-content.payer-right .history-cell.person-right { padding-right: 37px; }
+.payer-badge { align-items: center; background: #006428; border-radius: 8px; color: #f9fffb; display: flex; font-size: 9px; font-weight: 700; height: 18px; justify-content: center; position: absolute; top: 9px; width: 21px; z-index: 2; }
+.payer-badge-left { left: 8px; }
+.payer-badge-right { right: 8px; }
 .swipe-delete { background: #9e2e21; border: 0; bottom: 0; color: #fff; font-size: 12px; font-weight: 700; position: absolute; right: 0; top: 0; width: 68px; }
 .empty-state { color: rgb(0 100 40 / 70%); font-size: 14px; margin: 12px 22px; }
 .sync-status { display: none; }

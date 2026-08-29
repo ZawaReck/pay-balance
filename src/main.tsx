@@ -12,9 +12,8 @@ import {
   type LedgerBase,
   type Participant,
 } from "./domain/ledger";
+import { anonymousLedgerStorageKey, ledgerStorageKeyFor } from "./storage/ledger-storage";
 import "./styles.css";
-
-const storageKey = "paybalance-demo-ledger";
 
 type AppState = {
   expenses: Expense[];
@@ -58,13 +57,20 @@ const initialState: AppState = {
   ],
 };
 
-const loadState = (): AppState => {
+const emptyState = (): AppState => ({
+  ...initialState,
+  base: { leftNet: 0, lastOddExtra: null },
+  names: { ...initialState.names },
+  expenses: [],
+});
+
+const loadState = (storageKey: string, fallback: AppState): AppState => {
   try {
     const saved = localStorage.getItem(storageKey);
-    if (!saved) return initialState;
-    return { ...initialState, ...JSON.parse(saved) } as AppState;
+    if (!saved) return fallback;
+    return { ...fallback, ...JSON.parse(saved) } as AppState;
   } catch {
-    return initialState;
+    return fallback;
   }
 };
 
@@ -76,7 +82,8 @@ const destructiveLabels: Record<DestructiveKind, string> = {
 };
 
 function App() {
-  const [appState, setAppState] = useState<AppState>(loadState);
+  const [storageScope, setStorageScope] = useState(anonymousLedgerStorageKey);
+  const [appState, setAppState] = useState<AppState>(() => loadState(anonymousLedgerStorageKey, initialState));
   const [payer, setPayer] = useState<Participant>("right");
   const [mode, setMode] = useState<AllocationMode>("individual");
   const [leftAmount, setLeftAmount] = useState("");
@@ -107,8 +114,8 @@ function App() {
   );
 
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(appState));
-  }, [appState]);
+    localStorage.setItem(storageScope, JSON.stringify(appState));
+  }, [appState, storageScope]);
 
   useEffect(() => {
     setPayer(ledger.nextPayer);
@@ -132,11 +139,16 @@ function App() {
     })
     .then((state) => {
       setPairState(state);
+      const nextStorageScope = ledgerStorageKeyFor(authenticatedUser!.id, state.pair?.id ?? null);
+      setStorageScope(nextStorageScope);
+      const scopedState = loadState(nextStorageScope, emptyState());
       if (state.pair) {
-        setAppState((current) => ({
-          ...current,
+        setAppState({
+          ...scopedState,
           names: { left: state.pair!.left.displayName, right: state.pair!.right.displayName },
-        }));
+        });
+      } else {
+        setAppState(scopedState);
       }
     })
     .catch((error) => setMessage(error instanceof Error ? error.message : "ペア情報を取得できませんでした。"));
@@ -173,14 +185,25 @@ function App() {
   };
 
   const synchronizeExpenses = async (expenses: Expense[]) => {
-    if (!pairState?.pair || syncingExpenses.current || !navigator.onLine || expenses.length === 0) return;
+    if (!pairState?.pair || syncingExpenses.current || expenses.length === 0) return;
+    if (!navigator.onLine) {
+      setMessage("オフラインです。通信復帰後に再試行してください。");
+      return;
+    }
     syncingExpenses.current = true;
+    const expenseIds = new Set(expenses.map((expense) => expense.id));
+    setAppState((current) => ({
+      ...current,
+      expenses: current.expenses.map((expense) => expenseIds.has(expense.id)
+        ? { ...expense, syncError: false }
+        : expense),
+    }));
     try {
       for (const expense of expenses) {
         const response = await fetch("/api/expenses", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...expense, pending: undefined, version: undefined }),
+          body: JSON.stringify({ ...expense, pending: undefined, syncError: undefined, version: undefined }),
         });
         if (!response.ok) {
           const data = await response.json<{ error?: string }>();
@@ -190,6 +213,12 @@ function App() {
       await refreshSharedLedger();
       setMessage("同期しました。");
     } catch (error) {
+      setAppState((current) => ({
+        ...current,
+        expenses: current.expenses.map((expense) => expenseIds.has(expense.id) && expense.pending
+          ? { ...expense, syncError: true }
+          : expense),
+      }));
       setMessage(error instanceof Error ? error.message : "支出を同期できませんでした。");
     } finally {
       syncingExpenses.current = false;
@@ -202,7 +231,7 @@ function App() {
 
   useEffect(() => {
     if (!pairState?.pair) return;
-    const pending = loadState().expenses.filter((expense) => expense.pending);
+    const pending = loadState(storageScope, emptyState()).expenses.filter((expense) => expense.pending);
     if (pending.length > 0 && navigator.onLine) {
       void synchronizeExpenses(pending);
     } else {
@@ -210,16 +239,31 @@ function App() {
     }
 
     const retry = () => {
-      const queued = loadState().expenses.filter((expense) => expense.pending);
+      const queued = loadState(storageScope, emptyState()).expenses.filter((expense) => expense.pending);
       void synchronizeExpenses(queued);
     };
     window.addEventListener("online", retry);
     return () => window.removeEventListener("online", retry);
-  }, [pairState?.pair?.id]);
+  }, [pairState?.pair?.id, storageScope]);
 
   useEffect(() => {
     if (pairState?.pair) void loadDestructiveRequest();
     else setDestructiveRequest(null);
+  }, [pairState?.pair?.id]);
+
+  useEffect(() => {
+    if (!pairState?.pair) return;
+    const refreshAfterResume = () => {
+      if (document.visibilityState !== "visible" || !navigator.onLine) return;
+      void refreshSharedLedger().catch(() => { void loadPairState(); });
+      void loadDestructiveRequest();
+    };
+    document.addEventListener("visibilitychange", refreshAfterResume);
+    window.addEventListener("focus", refreshAfterResume);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshAfterResume);
+      window.removeEventListener("focus", refreshAfterResume);
+    };
   }, [pairState?.pair?.id]);
 
   useEffect(() => {
@@ -265,6 +309,7 @@ function App() {
       rightMemo: mode === "individual" ? rightMemo.trim() : undefined,
       version: savedExpense?.version,
       pending: pairState?.pair ? savedExpense?.pending ?? !editingId : undefined,
+      syncError: pairState?.pair ? false : undefined,
     };
 
     if (!isValidExpense(expense)) {
@@ -487,8 +532,8 @@ function App() {
     }
     setAuthenticatedUser(null);
     setPairState(null);
-    setAppState({ ...initialState, expenses: [], base: { leftNet: 0, lastOddExtra: null } });
-    localStorage.removeItem(storageKey);
+    setAppState(emptyState());
+    localStorage.removeItem(storageScope);
     setView("home");
     setMessage("アカウントを削除しました。");
   };
@@ -802,7 +847,7 @@ function App() {
               <li className={`history-row ${expense.pending ? "is-pending" : ""}`} key={expense.id}>
                 <button className="swipe-delete" onClick={() => deleteExpense(expense.id)} type="button">削除</button>
                 <div
-                  className={`history-row-content ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
+                  className={`history-row-content payer-${expense.payer} ${revealedExpenseId === expense.id ? "is-revealed" : ""}`}
                   onClick={() => {
                     if (suppressedClickId.current === expense.id) {
                       suppressedClickId.current = null;
@@ -842,8 +887,17 @@ function App() {
                       </div>
                     );
                   })}
+                  <span className={`payer-badge payer-badge-${expense.payer}`}>払</span>
                 </div>
-                {expense.pending && <span className="pending-label">同期待ち</span>}
+                {expense.pending && (expense.syncError ? (
+                  <button
+                    className="pending-label retry-sync"
+                    onClick={(event) => { event.stopPropagation(); void synchronizeExpenses([expense]); }}
+                    type="button"
+                  >再試行</button>
+                ) : (
+                  <span className="pending-label">同期待ち</span>
+                ))}
               </li>
             ))}
             {Array.from({ length: Math.max(0, 10 - historyRows.length) }, (_, index) => (

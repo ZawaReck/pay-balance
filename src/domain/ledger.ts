@@ -12,6 +12,7 @@ export interface Expense {
   rightMemo?: string;
   version?: number;
   pending?: boolean;
+  syncError?: boolean;
 }
 
 export interface LedgerBase {
