@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  authenticatedReturnUrl,
   canDeleteAccountImmediately,
   isDisplayName,
   normalizeDisplayName,
@@ -31,5 +32,12 @@ describe("表示名", () => {
     expect(parseLeftOnLeft(true)).toBe(true);
     expect(parseLeftOnLeft(false)).toBe(false);
     expect(parseLeftOnLeft("false")).toBeNull();
+  });
+
+  it("ログイン完了後の戻り先へ成功状態を付ける", () => {
+    expect(authenticatedReturnUrl("https://paybalance.example", "/"))
+      .toBe("https://paybalance.example/?auth=success");
+    expect(authenticatedReturnUrl("https://paybalance.example", "/invitations/token"))
+      .toBe("https://paybalance.example/invitations/token?auth=success");
   });
 });

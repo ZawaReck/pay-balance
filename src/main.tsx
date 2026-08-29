@@ -288,6 +288,14 @@ function App() {
     return () => window.clearTimeout(timer);
   }, [message]);
 
+  useEffect(() => {
+    const url = new URL(location.href);
+    if (url.searchParams.get("auth") !== "success") return;
+    setMessage("Googleログインしました。");
+    url.searchParams.delete("auth");
+    history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, []);
+
   const amountFor = (value: string) => (value === "" ? 0 : Number(value));
   const toggleMode = () => {
     if (mode === "individual") {
@@ -427,6 +435,27 @@ function App() {
     } catch {
       setMessage("コピーできませんでした。リンクを長押ししてコピーしてください。");
     }
+  };
+
+  const startGoogleLogin = async (returnTo = "/") => {
+    if ("serviceWorker" in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+          const controllerChanged = new Promise<void>((resolve) => {
+            const finish = () => resolve();
+            navigator.serviceWorker.addEventListener("controllerchange", finish, { once: true });
+            window.setTimeout(finish, 2000);
+          });
+          await registration.update();
+          if (registration.installing || registration.waiting) await controllerChanged;
+        }
+      } catch {
+        // Login can continue through the network even if the update check fails.
+      }
+    }
+    const query = returnTo === "/" ? "" : `?${new URLSearchParams({ returnTo })}`;
+    location.assign(`/api/auth/google${query}`);
   };
 
   const shareInvitation = async (invitationUrl: string) => {
@@ -594,7 +623,7 @@ function App() {
   }, [appState.base.lastOddExtra, appState.expenses]);
 
   if (invitationToken) {
-    const returnTo = encodeURIComponent(`/invitations/${invitationToken}`);
+    const returnTo = `/invitations/${invitationToken}`;
     return (
       <main className="app-shell invitation-page">
         <header className="topbar"><a className="brand" href="/">PayBalance</a></header>
@@ -612,7 +641,7 @@ function App() {
               ) : authenticatedUser ? (
                 <button className="primary-button" onClick={joinPair} type="button">ペアに参加する</button>
               ) : (
-                <a className="settings-login" href={`/api/auth/google?returnTo=${returnTo}`}>Googleでログインして参加</a>
+                <button className="settings-login" onClick={() => void startGoogleLogin(returnTo)} type="button">Googleでログインして参加</button>
               )}
             </>
           )}
@@ -645,7 +674,7 @@ function App() {
             </form>
           ) : (
             <>
-              <a className="settings-login" href="/api/auth/google">Googleでログイン</a>
+              <button className="settings-login" onClick={() => void startGoogleLogin()} type="button">Googleでログイン</button>
               {(["left", "right"] as const).map((participant) => (
                 <label className="settings-field" key={participant}>
                   <span>{participant === "left" ? "左側の人" : "右側の人"}</span>

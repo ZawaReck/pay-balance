@@ -38,6 +38,12 @@ export const canDeleteAccountImmediately = (pairId: string | null) => pairId ===
 export const parseLeftOnLeft = (value: unknown): boolean | null =>
   typeof value === "boolean" ? value : null;
 
+export const authenticatedReturnUrl = (origin: string, returnPath: string) => {
+  const url = new URL(returnPath, origin);
+  url.searchParams.set("auth", "success");
+  return url.toString();
+};
+
 const callbackUrl = (env: AuthEnv) => `${env.APP_ORIGIN}/api/auth/google/callback`;
 
 export const beginGoogleLogin = async (request: Request, env: AuthEnv) => {
@@ -126,7 +132,7 @@ export const completeGoogleLogin = async (request: Request, env: AuthEnv) => {
 
   const savedReturnPath = decodeURIComponent(cookieValue(request, "pb_return") ?? "/");
   const returnPath = savedReturnPath.startsWith("/") && !savedReturnPath.startsWith("//") ? savedReturnPath : "/";
-  const headers = new Headers({ Location: `${env.APP_ORIGIN}${returnPath === "/" ? "" : returnPath}` });
+  const headers = new Headers({ Location: authenticatedReturnUrl(env.APP_ORIGIN, returnPath) });
   headers.append("Set-Cookie", cookie("pb_session", sessionToken, 30 * 24 * 60 * 60));
   headers.append("Set-Cookie", cookie("pb_oauth", "", 0));
   headers.append("Set-Cookie", cookie("pb_return", "", 0));
