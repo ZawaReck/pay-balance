@@ -5,12 +5,13 @@
 body { margin: 0; min-width: 320px; min-height: 100vh; overflow: hidden; }
 button, input { font: inherit; }
 button { cursor: pointer; }
-.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: env(safe-area-inset-top, 0); position: relative; }
-.app-shell::after { bottom: max(4px, env(safe-area-inset-bottom, 0px)); color: rgb(0 100 40 / 42%); content: "v0.1.0"; font-size: 9px; line-height: 1; pointer-events: none; position: absolute; right: 9px; z-index: 9; }
+.app-shell { background: #f9fffb; height: 100dvh; margin: 0 auto; max-width: 393px; overflow: hidden; padding-top: env(safe-area-inset-top, 0); }
 .home-page { display: flex; flex-direction: column; }
 .topbar { align-items: center; display: flex; height: 116px; justify-content: space-between; padding: 0 20px; }
 .app-shell:not(.settings-page) .topbar { height: 76px; }
 .brand { color: #006428; font-size: 20px; font-weight: 900; letter-spacing: -.65px; text-decoration: none; }
+a.brand { position: relative; }
+a.brand::after { color: rgb(0 100 40 / 48%); content: "v0.1.0"; font-size: 8px; font-weight: 700; left: calc(100% + 4px); letter-spacing: 0; line-height: 1; position: absolute; top: -2px; }
 .settings-button { background: transparent; border: 0; color: #006428; font-size: 16px; font-weight: 900; letter-spacing: 1px; opacity: .52; padding: 8px 0 8px 8px; }
 
 .balance-panel { border-bottom: 1px solid #006428; column-gap: 24px; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 58px 58px; margin-top: 20px; padding: 0 22px 10px 118px; }
