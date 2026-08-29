@@ -83,6 +83,7 @@ const destructiveLabels: Record<DestructiveKind, string> = {
   dissolve_pair: "ペア解消",
   delete_account: "アカウント削除",
 };
+const pendingGoogleLoginKey = "paybalance-pending-google-login";
 
 function App() {
   const [storageScope, setStorageScope] = useState(anonymousLedgerStorageKey);
@@ -120,6 +121,13 @@ function App() {
   useEffect(() => {
     localStorage.setItem(storageScope, JSON.stringify(appState));
   }, [appState, storageScope]);
+
+  useEffect(() => {
+    const pendingLogin = sessionStorage.getItem(pendingGoogleLoginKey);
+    if (!pendingLogin) return;
+    sessionStorage.removeItem(pendingGoogleLoginKey);
+    location.replace(pendingLogin);
+  }, []);
 
   useEffect(() => {
     setPayer(ledger.nextPayer);
@@ -438,24 +446,22 @@ function App() {
   };
 
   const startGoogleLogin = async (returnTo = "/") => {
+    const query = returnTo === "/" ? "" : `?${new URLSearchParams({ returnTo })}`;
+    const loginPath = `/api/auth/google${query}`;
     if ("serviceWorker" in navigator) {
       try {
         const registration = await navigator.serviceWorker.getRegistration();
-        if (registration) {
-          const controllerChanged = new Promise<void>((resolve) => {
-            const finish = () => resolve();
-            navigator.serviceWorker.addEventListener("controllerchange", finish, { once: true });
-            window.setTimeout(finish, 2000);
-          });
-          await registration.update();
-          if (registration.installing || registration.waiting) await controllerChanged;
+        if (registration && navigator.serviceWorker.controller) {
+          sessionStorage.setItem(pendingGoogleLoginKey, loginPath);
+          await registration.unregister();
+          location.reload();
+          return;
         }
       } catch {
-        // Login can continue through the network even if the update check fails.
+        sessionStorage.removeItem(pendingGoogleLoginKey);
       }
     }
-    const query = returnTo === "/" ? "" : `?${new URLSearchParams({ returnTo })}`;
-    location.assign(`/api/auth/google${query}`);
+    location.assign(loginPath);
   };
 
   const shareInvitation = async (invitationUrl: string) => {
