@@ -1,4 +1,10 @@
-import { beginGoogleLogin, completeGoogleLogin, getCurrentUser, updateCurrentUser } from "./server/auth";
+import {
+  beginGoogleLogin,
+  completeGoogleLogin,
+  deleteCurrentUser,
+  getCurrentUser,
+  updateCurrentUser,
+} from "./server/auth";
 import {
   approveDestructiveRequest,
   cancelDestructiveRequest,
@@ -33,6 +39,7 @@ export default {
     if (url.pathname === "/api/auth/google") return beginGoogleLogin(request, env);
     if (url.pathname === "/api/auth/google/callback") return completeGoogleLogin(request, env);
     if (url.pathname === "/api/me" && request.method === "PATCH") return updateCurrentUser(request, env);
+    if (url.pathname === "/api/me" && request.method === "DELETE") return deleteCurrentUser(request, env);
     if (url.pathname === "/api/me" && request.method === "GET") return getCurrentUser(request, env);
     if (url.pathname === "/api/pair" && request.method === "GET") return getPairState(request, env);
     if (url.pathname === "/api/invitations" && request.method === "POST") return createInvitation(request, env);

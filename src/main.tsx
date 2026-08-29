@@ -477,6 +477,22 @@ function App() {
     setMessage(`${destructiveLabels[approvedKind]}を実行しました。`);
   };
 
+  const deleteUnpairedAccount = async () => {
+    if (!window.confirm("アカウントを削除します。この操作は取り消せません。")) return;
+    const response = await fetch("/api/me", { method: "DELETE" });
+    if (!response.ok) {
+      const data = await response.json<{ error?: string }>();
+      setMessage(data.error ?? "アカウントを削除できませんでした。");
+      return;
+    }
+    setAuthenticatedUser(null);
+    setPairState(null);
+    setAppState({ ...initialState, expenses: [], base: { leftNet: 0, lastOddExtra: null } });
+    localStorage.removeItem(storageKey);
+    setView("home");
+    setMessage("アカウントを削除しました。");
+  };
+
   const joinPair = async () => {
     if (!invitationToken) return;
     const response = await fetch(`/api/invitations/${encodeURIComponent(invitationToken)}`, { method: "POST" });
@@ -649,6 +665,13 @@ function App() {
                 <button className="danger-button" onClick={() => void submitDestructiveRequest("delete_account")} type="button">アカウント削除を申請</button>
               </>
             )}
+          </section>
+        )}
+        {authenticatedUser && pairState && !pairState.pair && (
+          <section className="settings-section destructive-section">
+            <h1>アカウント</h1>
+            <p>ペアに所属していないため、アカウントはすぐに削除されます。</p>
+            <button className="danger-button" onClick={() => void deleteUnpairedAccount()} type="button">アカウントを削除</button>
           </section>
         )}
         {message && <p className="form-message" role="status">{message}</p>}

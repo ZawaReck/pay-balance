@@ -33,6 +33,8 @@ export const normalizeDisplayName = (value: unknown) =>
 
 export const isDisplayName = (value: string) => value.length > 0 && Array.from(value).length <= 24;
 
+export const canDeleteAccountImmediately = (pairId: string | null) => pairId === null;
+
 const callbackUrl = (env: AuthEnv) => `${env.APP_ORIGIN}/api/auth/google/callback`;
 
 export const beginGoogleLogin = async (request: Request, env: AuthEnv) => {
@@ -137,6 +139,23 @@ export const updateCurrentUser = async (request: Request, env: AuthEnv) => {
     UPDATE users SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
   `).bind(displayName, user.id).run();
   return Response.json({ user: { id: user.id, displayName } });
+};
+
+export const deleteCurrentUser = async (request: Request, env: AuthEnv) => {
+  const user = await getAuthenticatedUser(request, env);
+  if (!user) return jsonError("Googleログインが必要です。", 401);
+  const pair = await env.DB.prepare(`
+    SELECT id FROM pairs WHERE left_user_id = ? OR right_user_id = ?
+  `).bind(user.id, user.id).first<{ id: string }>();
+  if (!canDeleteAccountImmediately(pair?.id ?? null)) {
+    return jsonError("ペア所属中は相手へアカウント削除を申請してください。", 409);
+  }
+
+  await env.DB.prepare("DELETE FROM users WHERE id = ?").bind(user.id).run();
+  return new Response(null, {
+    status: 204,
+    headers: { "Set-Cookie": cookie("pb_session", "", 0) },
+  });
 };
 
 export type AuthenticatedUser = {
