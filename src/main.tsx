@@ -83,7 +83,6 @@ const destructiveLabels: Record<DestructiveKind, string> = {
   dissolve_pair: "ペア解消",
   delete_account: "アカウント削除",
 };
-const pendingGoogleLoginKey = "paybalance-pending-google-login";
 
 function App() {
   const [storageScope, setStorageScope] = useState(anonymousLedgerStorageKey);
@@ -121,13 +120,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem(storageScope, JSON.stringify(appState));
   }, [appState, storageScope]);
-
-  useEffect(() => {
-    const pendingLogin = sessionStorage.getItem(pendingGoogleLoginKey);
-    if (!pendingLogin) return;
-    sessionStorage.removeItem(pendingGoogleLoginKey);
-    location.replace(pendingLogin);
-  }, []);
 
   useEffect(() => {
     setPayer(ledger.nextPayer);
@@ -445,23 +437,9 @@ function App() {
     }
   };
 
-  const startGoogleLogin = async (returnTo = "/") => {
+  const startGoogleLogin = (returnTo = "/") => {
     const query = returnTo === "/" ? "" : `?${new URLSearchParams({ returnTo })}`;
-    const loginPath = `/api/auth/google${query}`;
-    if ("serviceWorker" in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.getRegistration();
-        if (registration && navigator.serviceWorker.controller) {
-          sessionStorage.setItem(pendingGoogleLoginKey, loginPath);
-          await registration.unregister();
-          location.reload();
-          return;
-        }
-      } catch {
-        sessionStorage.removeItem(pendingGoogleLoginKey);
-      }
-    }
-    location.assign(loginPath);
+    location.assign(`/api/auth/google${query}`);
   };
 
   const shareInvitation = async (invitationUrl: string) => {
