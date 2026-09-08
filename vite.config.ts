@@ -18,6 +18,10 @@ export default defineConfig({
         background_color: "#f9fffb",
         display: "standalone",
         lang: "ja",
+        icons: [
+          { src: "/icons/app-icon-192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icons/app-icon-512.png", sizes: "512x512", type: "image/png" },
+        ],
       },
     }),
   ],
