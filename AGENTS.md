@@ -30,3 +30,5 @@ Add tests with every behavior change and bug fix. Mirror the source structure un
 There is no Git history from which to infer an existing convention. Use concise, imperative commit subjects, optionally following Conventional Commits (for example, `feat: add balance calculation` or `fix: reject negative payments`). Keep commits narrowly scoped.
 
 Pull requests should explain the problem and solution, list verification performed, link relevant issues, and call out configuration or migration changes. Include screenshots for visible UI changes. Before requesting review, run all configured formatting, linting, testing, and build checks.
+
+For future specification changes and non-urgent updates, create a feature or fix branch and open a pull request. The author should self-review the pull request before merging it. Direct pushes to `main` are reserved for urgent, small fixes.
