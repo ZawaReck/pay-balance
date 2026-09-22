@@ -78,6 +78,7 @@ const loadState = (storageKey: string, fallback: AppState): AppState => {
 };
 
 const formatYen = (amount: number) => `${amount.toLocaleString("ja-JP")}円`;
+const appVersion = "v1.0.0";
 const destructiveLabels: Record<DestructiveKind, string> = {
   settle: "精算リセット",
   dissolve_pair: "ペア解消",
@@ -765,6 +766,7 @@ function App() {
           </section>
         )}
         {message && <p className="form-message" role="status">{message}</p>}
+        <p className="app-version">{appVersion}</p>
       </main>
     );
   }
@@ -776,7 +778,8 @@ function App() {
         <button className="settings-button" onClick={() => setView("settings")} type="button" aria-label="設定を開く">•••</button>
       </header>
 
-      <section className="balance-panel" aria-label="現在の支払いバランス">
+      <div className="home-content">
+        <section className="balance-panel" aria-label="現在の支払いバランス">
         <div className="balance-copy">
           <p>次に払う人</p>
           <strong>{participantNames[ledger.nextPayer]}</strong>
@@ -955,7 +958,8 @@ function App() {
           </ul>
         )}
       </section>
-      <p className="sync-status">この端末に保存中</p>
+        <p className="sync-status">この端末に保存中</p>
+      </div>
     </main>
   );
 }
