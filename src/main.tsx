@@ -78,7 +78,7 @@ const loadState = (storageKey: string, fallback: AppState): AppState => {
 };
 
 const formatYen = (amount: number) => `${amount.toLocaleString("ja-JP")}円`;
-const appVersion = "v1.0.0";
+const appVersion = "v1.0.1";
 const destructiveLabels: Record<DestructiveKind, string> = {
   settle: "精算リセット",
   dissolve_pair: "ペア解消",
@@ -779,9 +779,10 @@ function App() {
       </header>
 
       <div className="home-content">
-        <section className="balance-panel" aria-label="現在の支払いバランス">
+        <div className="entry-content">
+          <section className="balance-panel" aria-label="現在の支払いバランス">
         <div className="balance-copy">
-          <p>次に払う人</p>
+          <p>次</p>
           <strong>{participantNames[ledger.nextPayer]}</strong>
         </div>
         <div className="difference-copy">
@@ -791,35 +792,6 @@ function App() {
       </section>
 
       <form className="entry-form" onSubmit={addExpense}>
-        <div className="form-controls">
-          <button
-            aria-label={`負担方式：${mode === "individual" ? "個別" : "一括"}`}
-            aria-pressed={mode === "split"}
-            className={`mode-switch ${mode === "split" ? "is-split" : "is-individual"}`}
-            onClick={toggleMode}
-            type="button"
-          >
-            <span className="mode-individual">個別</span>
-            <span className="mode-split">一括</span>
-            <span className="mode-thumb" aria-hidden="true"></span>
-          </button>
-          <div className="section-heading">
-            <span>払う人</span>
-            <div className="segmented" aria-label="支払う人">
-              {displayedParticipants.map((participant) => (
-                <button
-                  className={payer === participant ? `person-${participant} selected` : `person-${participant}`}
-                  key={participant}
-                  onClick={() => setPayer(participant)}
-                  type="button"
-                >
-                  {participantNames[participant]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         <div className="entry-details">
           {mode === "individual" ? (
             <>
@@ -883,9 +855,40 @@ function App() {
             </>
           )}
         </div>
-        <button className="save-button" type="submit">記録</button>
+        <div className="entry-actions">
+          <div className="form-controls">
+            <button
+              aria-label={`負担方式：${mode === "individual" ? "個別" : "一括"}`}
+              aria-pressed={mode === "split"}
+              className={`mode-switch ${mode === "split" ? "is-split" : "is-individual"}`}
+              onClick={toggleMode}
+              type="button"
+            >
+              <span className="mode-individual">個別</span>
+              <span className="mode-split">一括</span>
+              <span className="mode-thumb" aria-hidden="true"></span>
+            </button>
+            <div className="section-heading">
+              <span>払う人</span>
+              <div className="segmented" aria-label="支払う人">
+                {displayedParticipants.map((participant) => (
+                  <button
+                    className={payer === participant ? `person-${participant} selected` : `person-${participant}`}
+                    key={participant}
+                    onClick={() => setPayer(participant)}
+                    type="button"
+                  >
+                    {participantNames[participant]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <button className="save-button" type="submit">記録</button>
+        </div>
         {message && <p className="form-message" role="status">{message}</p>}
-      </form>
+          </form>
+        </div>
 
       <section className="history" aria-label="最近の支払い">
         <div className="history-title"><h1>最近の支払い</h1><span>最新10件</span></div>
