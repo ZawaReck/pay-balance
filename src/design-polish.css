@@ -1,0 +1,100 @@
+/* Version 2 visual refinements layered over the original layout. */
+.app-shell {
+  --soft-line: rgb(0 100 40 / 13%);
+  --muted-ink: rgb(0 100 40 / 62%);
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.home-page > .topbar, .entry-content { transform: none; }
+.app-shell:not(.settings-page) .topbar { height: 72px; flex-shrink: 0; padding: 0 24px; }
+.brand { font-size: 21px; font-weight: 700; letter-spacing: -.8px; }
+.settings-button { border: 1px solid var(--soft-line); border-radius: 50%; height: 34px; opacity: 1; padding: 0 0 6px; width: 34px; }
+.home-content { margin-top: 0; }
+.balance-panel { border-color: var(--soft-line); gap: 16px; grid-template-rows: 64px; margin: 0; padding: 0 24px 8px; }
+.balance-copy, .difference-copy { align-items: flex-start; flex-direction: column; gap: 6px; justify-content: center; min-width: 0; }
+.balance-copy p, .difference-copy p { align-self: auto; color: var(--muted-ink); font-size: 12px; font-weight: 500; }
+.balance-copy strong, .difference-copy strong { align-self: stretch; background: transparent; border-radius: 0; font-size: 28px; height: 36px; justify-content: flex-start; letter-spacing: -.8px; overflow: hidden; padding: 0; text-align: left; text-overflow: ellipsis; width: auto; }
+.balance-copy strong { display: block; }
+.difference-copy { border-left: 1px solid var(--soft-line); padding-left: 20px; }
+.difference-copy strong { gap: 5px; font-variant-numeric: tabular-nums; }
+.difference-copy strong small { align-self: flex-end; color: var(--muted-ink); margin-bottom: 5px; position: static; }
+
+.entry-form { gap: 20px; padding: 8px 24px 22px; }
+.entry-details { gap: 8px; grid-template-rows: 44px 36px; }
+.amount-grid { gap: 16px; height: 44px; }
+.amount-field { gap: 7px; height: 44px; }
+.amount-field > span { font-size: 13px; max-width: 5em; overflow: hidden; text-overflow: ellipsis; }
+.amount-field > div, .total-field > div { align-items: center; border-radius: 10px; height: 44px; padding: 0 10px; }
+.amount-field input, .total-field input { color: #006428; font-variant-numeric: tabular-nums; height: 44px; }
+.amount-field input::placeholder, .total-field input::placeholder { color: var(--muted-ink); opacity: 1; }
+.amount-field small, .total-field small { color: var(--muted-ink); font-weight: 500; }
+.total-field { border-radius: 10px; height: 44px; }
+.individual-memos { gap: 16px; }
+.memo-field, .individual-memo { background: transparent; border: 1px solid var(--soft-line); border-radius: 9px; height: 36px; }
+.memo-field input, .individual-memo input { padding: 7px 10px; text-align: left; }
+.memo-field input::placeholder, .individual-memo input::placeholder { color: var(--muted-ink); font-size: 11px; font-weight: 400; text-align: left; }
+.entry-actions { gap: 16px; justify-content: space-between; }
+.form-controls { gap: 12px; transform: none; }
+.section-heading { gap: 8px; min-width: 0; }
+.section-heading > span { color: var(--muted-ink); font-size: 11px; font-weight: 500; }
+.segmented { gap: 6px; min-width: 0; }
+.segmented button { border: 1px solid transparent; color: var(--muted-ink); font-size: 13px; height: 38px; max-width: 76px; min-width: 62px; overflow: hidden; padding: 0 8px; text-overflow: ellipsis; white-space: nowrap; }
+.segmented .selected { border-color: #006428; box-shadow: inset 0 0 0 1px #006428; font-weight: 700; }
+.mode-switch { flex-shrink: 0; }
+.save-button { border-radius: 12px; box-shadow: 0 3px 8px rgb(0 100 40 / 12%); height: 44px; margin: 0; min-width: 104px; transform: none; }
+
+.history { border-color: var(--soft-line); }
+.history-title { align-items: center; background: #f9fffb; border-bottom: 1px solid var(--soft-line); display: flex; height: 40px; justify-content: space-between; padding: 0 24px; }
+.history-title h1 { font-size: 12px; font-weight: 700; margin: 0; }
+.history-title > span { color: var(--muted-ink); font-size: 10px; }
+.history-grid { max-height: 320px; overflow-y: auto; }
+.history-row { border-color: var(--soft-line); height: 40px; }
+.history-cell { gap: 6px; padding: 0 16px; }
+.history-cell + .history-cell { border-color: var(--soft-line); }
+.history-cell span { font-size: 12px; }
+.history-cell strong { font-variant-numeric: tabular-nums; font-weight: 500; }
+.placeholder-row { opacity: .22; }
+
+.settings-page .topbar { height: 88px; padding: 0 24px; }
+.settings-section { border-color: var(--soft-line); padding: 24px; }
+.settings-section h1 { font-size: 15px; }
+.settings-section p, .settings-field span { color: var(--muted-ink); }
+.settings-field input { border: 1px solid var(--soft-line); }
+.outline-button { border-color: rgb(0 100 40 / 28%); }
+.invitation-card { border-color: var(--soft-line); }
+button:focus-visible, a:focus-visible, input:focus-visible, [role="button"]:focus-visible { outline: 2px solid #006428; outline-offset: 3px; }
+.amount-field input:focus, .amount-field input:focus-visible,
+.total-field input:focus, .total-field input:focus-visible {
+  border: 0;
+  box-shadow: none;
+  outline: 0 !important;
+}
+button:active { filter: brightness(.95); }
+button:disabled { cursor: wait; opacity: .55; }
+
+@media (min-width: 600px) {
+  .app-shell { border: 1px solid var(--soft-line); border-radius: 28px; box-shadow: 0 12px 40px rgb(0 100 40 / 6%); }
+}
+@media (max-width: 359px) {
+  .entry-form { padding-left: 16px; padding-right: 16px; }
+  .balance-panel { padding-left: 16px; padding-right: 16px; }
+  .form-controls { gap: 8px; }
+  .section-heading { gap: 5px; }
+  .segmented button { min-width: 54px; max-width: 60px; padding: 0 5px; }
+  .amount-grid, .individual-memos { gap: 12px; }
+}
+@media (max-height: 740px) {
+  .history { flex-basis: calc(280px + env(safe-area-inset-bottom, 0px)); }
+  .history-grid { max-height: 240px; }
+  .entry-form { gap: 14px; padding-top: 14px; padding-bottom: 16px; }
+}
+@media (max-height: 620px) {
+  .home-page { overflow-y: auto; }
+  .home-content { flex: none; min-height: 530px; }
+  .entry-content { flex: none; min-height: 310px; }
+  .entry-actions { margin-top: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: .01ms !important; }
+}

@@ -15,6 +15,7 @@ import {
 import { numericFontSize } from "./domain/formatting";
 import { anonymousLedgerStorageKey, ledgerStorageKeyFor } from "./storage/ledger-storage";
 import "./styles.css";
+import "./design-polish.css";
 
 type AppState = {
   expenses: Expense[];
@@ -78,7 +79,7 @@ const loadState = (storageKey: string, fallback: AppState): AppState => {
 };
 
 const formatYen = (amount: number) => `${amount.toLocaleString("ja-JP")}円`;
-const appVersion = "v1.0.1";
+const appVersion = "v2.0.0";
 const destructiveLabels: Record<DestructiveKind, string> = {
   settle: "精算リセット",
   dissolve_pair: "ペア解消",

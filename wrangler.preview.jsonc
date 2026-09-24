@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pay-balance-design-preview",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-28",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pay-balance-design-preview",
+      "database_id": "b4c6342b-c5bb-4c05-9474-fdf2410dabb1"
+    }
+  ],
+  "vars": {
+    "APP_ORIGIN": "https://pay-balance-design-preview.ozw1504.workers.dev"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
