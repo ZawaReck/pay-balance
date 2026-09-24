@@ -1,6 +1,6 @@
 {
   "name": "pay-balance",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "type": "module",
   "directories": {
     "doc": "docs"
@@ -11,7 +11,8 @@
     "test": "vitest run",
     "lint": "tsc -b --noEmit",
     "preview": "vite preview",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "deploy:preview": "npm run build && wrangler deploy --config wrangler.preview.jsonc"
   },
   "keywords": [],
   "author": "",
